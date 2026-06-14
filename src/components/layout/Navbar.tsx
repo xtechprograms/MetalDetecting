@@ -26,7 +26,7 @@ export async function Navbar() {
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("username, display_name, avatar_url")
+          .select("username, display_name, avatar_url, role")
           .eq("id", user.id)
           .maybeSingle();
         profile = data;

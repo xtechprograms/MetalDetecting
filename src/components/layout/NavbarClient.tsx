@@ -16,11 +16,15 @@ import {
   Search,
   Users,
   MessagesSquare,
+  Shield,
+  ShieldAlert,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { useRouter, usePathname } from "next/navigation";
 import { getInitials } from "@/lib/utils";
+import { canModerate, isAdmin } from "@/lib/forum/permissions";
+import type { UserRole } from "@/types/database";
 
 const mobileNavLinks = [
   { href: "/forum", label: "Forum", icon: MessagesSquare },
@@ -33,6 +37,7 @@ type Profile = {
   username: string;
   display_name: string;
   avatar_url: string | null;
+  role?: UserRole;
 };
 
 export function NavbarClient({
@@ -47,6 +52,9 @@ export function NavbarClient({
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const role = (profile?.role as UserRole) || "user";
+  const showModeration = canModerate(role);
+  const showAdmin = isAdmin(role);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -143,6 +151,26 @@ export function NavbarClient({
                       <UserIcon className="w-4 h-4" />
                       My Profile
                     </Link>
+                    {showModeration && (
+                      <Link
+                        href="/forum/moderation"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px] text-amber-200/90"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <ShieldAlert className="w-4 h-4 text-amber-400" />
+                        Moderation Panel
+                      </Link>
+                    )}
+                    {showAdmin && (
+                      <Link
+                        href="/forum/admin"
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px] text-gold-200/90"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <Shield className="w-4 h-4 text-gold-400" />
+                        Admin Panel
+                      </Link>
+                    )}
                     <Link
                       href="/finds/new"
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm sm:hidden min-h-[44px]"
@@ -228,6 +256,26 @@ export function NavbarClient({
                   <UserIcon className="w-5 h-5 text-gold-500 shrink-0" />
                   My Profile
                 </Link>
+                {showModeration && (
+                  <Link
+                    href="/forum/moderation"
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-amber-100 hover:bg-slate-800 min-h-[48px]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0" />
+                    Moderation Panel
+                  </Link>
+                )}
+                {showAdmin && (
+                  <Link
+                    href="/forum/admin"
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-gold-100 hover:bg-slate-800 min-h-[48px]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Shield className="w-5 h-5 text-gold-400 shrink-0" />
+                    Admin Panel
+                  </Link>
+                )}
                 <Link
                   href="/finds/new"
                   className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
