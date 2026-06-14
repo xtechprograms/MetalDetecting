@@ -69,11 +69,9 @@ export async function Navbar() {
             ))}
           </nav>
 
-          <NavbarClient user={user} profile={profile} navLinks={navLinks} />
+          <NavbarClient user={user} profile={profile} />
         </div>
       </div>
     </header>
   );
 }
-
-export { navLinks };

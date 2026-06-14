@@ -13,10 +13,19 @@ import {
   LogIn,
   UserPlus,
   Map,
+  Search,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { useRouter } from "next/navigation";
 import { getInitials } from "@/lib/utils";
+
+const mobileNavLinks = [
+  { href: "/map", label: "World Map", icon: Map },
+  { href: "/research", label: "Research", icon: Search },
+  { href: "/community", label: "Community", icon: Users },
+];
 
 type Profile = {
   username: string;
@@ -24,27 +33,20 @@ type Profile = {
   avatar_url: string | null;
 };
 
-type NavLink = {
-  href: string;
-  label: string;
-  icon: typeof Map;
-};
-
 export function NavbarClient({
   user,
   profile,
-  navLinks,
 }: {
   user: User | null;
   profile: Profile | null;
-  navLinks: NavLink[];
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   async function handleSignOut() {
+    if (!isSupabaseConfigured()) return;
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
@@ -147,7 +149,7 @@ export function NavbarClient({
 
       {mobileOpen && (
         <div className="md:hidden absolute top-16 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-1">
-          {navLinks.map(({ href, label, icon: Icon }) => (
+          {mobileNavLinks.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
