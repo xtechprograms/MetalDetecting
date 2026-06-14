@@ -101,6 +101,7 @@ type MapInnerProps = {
   selectedLocation: { lat: number; lng: number } | null;
   radiusKm?: number | null;
   historyMarkers?: HistoryMarker[];
+  onHistoryMarkerClick?: (id: string) => void;
 };
 
 export default function MapInner({
@@ -112,6 +113,7 @@ export default function MapInner({
   selectedLocation,
   radiusKm = null,
   historyMarkers = [],
+  onHistoryMarkerClick,
 }: MapInnerProps) {
   const mapFinds = finds.filter(
     (f) => f.show_on_map && f.latitude != null && f.longitude != null
@@ -147,11 +149,27 @@ export default function MapInner({
       )}
 
       {historyMarkers.map((marker) => (
-        <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={historyIcon}>
+        <Marker
+          key={marker.id}
+          position={[marker.lat, marker.lng]}
+          icon={historyIcon}
+          eventHandlers={{
+            click: () => onHistoryMarkerClick?.(marker.id),
+          }}
+        >
           <Popup>
             <div className="min-w-0 max-w-[220px]">
               <p className="font-semibold text-gold-400 text-sm">{marker.title}</p>
               {marker.label && <p className="text-xs text-slate-500 mt-1">{marker.label}</p>}
+              {onHistoryMarkerClick && (
+                <button
+                  type="button"
+                  onClick={() => onHistoryMarkerClick(marker.id)}
+                  className="text-xs text-gold-500 hover:underline mt-2 block"
+                >
+                  View history
+                </button>
+              )}
             </div>
           </Popup>
         </Marker>

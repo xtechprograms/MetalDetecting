@@ -27,6 +27,7 @@ import {
   type UnitSystem,
 } from "@/lib/geo";
 import { createClient } from "@/lib/supabase/client";
+import { HistoryDetailModal } from "@/components/research/HistoryDetailModal";
 
 type SearchMode = "area" | "nearby";
 
@@ -109,6 +110,9 @@ export function ResearchPanel() {
   const [history, setHistory] = useState<AreaHistory | null>(null);
   const [nearbyResult, setNearbyResult] = useState<NearbyHistoryResult | null>(null);
   const [selectedSite, setSelectedSite] = useState<NearbyHistorySite | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalHistory, setModalHistory] = useState<AreaHistory | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [bookmarking, setBookmarking] = useState(false);
@@ -208,8 +212,13 @@ export function ResearchPanel() {
 
   async function loadSiteDetails(site: NearbyHistorySite) {
     setSelectedSite(site);
-    setLoading(true);
+    setModalOpen(true);
+    setModalHistory(null);
+    setDetailLoading(true);
     setError(null);
+    setBookmarked(false);
+    setLat(site.coordinates.lat);
+    setLng(site.coordinates.lng);
 
     try {
       const res = await fetch(
@@ -217,14 +226,22 @@ export function ResearchPanel() {
       );
       if (!res.ok) throw new Error("Failed to load site history");
       const data: AreaHistory = await res.json();
-      setHistory(data);
-      setLat(site.coordinates.lat);
-      setLng(site.coordinates.lng);
-      setBookmarked(false);
+      setModalHistory(data);
     } catch {
       setError("Unable to load details for this site.");
     }
-    setLoading(false);
+    setDetailLoading(false);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setSelectedSite(null);
+    setModalHistory(null);
+  }
+
+  function handleHistoryMarkerClick(markerId: string) {
+    const site = nearbyResult?.sites.find((s) => s.id === markerId);
+    if (site) loadSiteDetails(site);
   }
 
   function getCurrentLocation() {
@@ -252,7 +269,8 @@ export function ResearchPanel() {
   }
 
   async function bookmarkSite() {
-    if (!history || lat == null || lng == null) return;
+    const targetHistory = modalOpen ? modalHistory : history;
+    if (!targetHistory || lat == null || lng == null) return;
     setBookmarking(true);
 
     const supabase = createClient();
@@ -268,11 +286,11 @@ export function ResearchPanel() {
 
     await supabase.from("research_bookmarks").insert({
       user_id: user.id,
-      place_name: history.placeName,
+      place_name: targetHistory.placeName,
       latitude: lat,
       longitude: lng,
       radius_km: nearbyResult?.radiusKm ?? 5,
-      history_summary: history.summary,
+      history_summary: targetHistory.summary,
     });
 
     setBookmarked(true);
@@ -289,7 +307,17 @@ export function ResearchPanel() {
     })) || [];
 
   const mapZoom =
-    nearbyResult != null ? (radius <= 10 ? 11 : radius <= 25 ? 10 : 9) : lat != null ? 10 : 2;
+    nearbyResult != null
+      ? radius <= 10
+        ? 11
+        : radius <= 25
+          ? 10
+          : radius <= 50
+            ? 9
+            : 8
+      : lat != null
+        ? 10
+        : 2;
 
   return (
     <div className="space-y-8">
@@ -455,6 +483,7 @@ export function ResearchPanel() {
         selectedLocation={lat != null && lng != null ? { lat, lng } : null}
         radiusKm={nearbyResult?.radiusKm ?? null}
         historyMarkers={mapMarkers}
+        onHistoryMarkerClick={nearbyResult ? handleHistoryMarkerClick : undefined}
       />
 
       {loading && (
@@ -490,8 +519,8 @@ export function ResearchPanel() {
                   key={site.id}
                   type="button"
                   onClick={() => loadSiteDetails(site)}
-                  className={`glass-card p-5 w-full text-left hover:border-gold-500/30 transition-all ${
-                    selectedSite?.id === site.id ? "border-gold-500/40" : ""
+                  className={`glass-card p-5 w-full text-left hover:border-gold-500/30 transition-all cursor-pointer ${
+                    selectedSite?.id === site.id && modalOpen ? "border-gold-500/40" : ""
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -505,6 +534,7 @@ export function ResearchPanel() {
                       </div>
                       <p className="text-sm text-slate-400 line-clamp-2">{site.summary}</p>
                       <p className="text-xs text-slate-500 mt-2">{site.placeName}</p>
+                      <p className="text-xs text-gold-500/80 mt-2">Tap to view full history</p>
                     </div>
                     <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
                       <span className="text-sm font-semibold text-gold-400">
@@ -530,7 +560,7 @@ export function ResearchPanel() {
         </div>
       )}
 
-      {history && !loading && (
+      {history && !loading && !modalOpen && mode === "area" && (
         <div className="space-y-4">
           <div className="flex justify-end">
             <button
@@ -549,6 +579,18 @@ export function ResearchPanel() {
           <HistoryDetails history={history} />
         </div>
       )}
+
+      <HistoryDetailModal
+        open={modalOpen}
+        onClose={closeModal}
+        site={selectedSite}
+        history={modalHistory}
+        loading={detailLoading}
+        unitSystem={unitSystem}
+        onBookmark={bookmarkSite}
+        bookmarking={bookmarking}
+        bookmarked={bookmarked}
+      />
     </div>
   );
 }

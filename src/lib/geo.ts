@@ -3,13 +3,15 @@ export type UnitSystem = "metric" | "imperial";
 export const UNIT_STORAGE_KEY = "treasure-atlas-units";
 
 export const RADIUS_PRESETS: Record<UnitSystem, number[]> = {
-  metric: [5, 10, 25, 50],
-  imperial: [5, 10, 25, 50],
+  metric: [5, 10, 25, 50, 100],
+  imperial: [5, 10, 25, 50, 100],
 };
 
 export function milesToKm(miles: number): number {
   return miles * 1.60934;
 }
+
+export const MAX_RADIUS_KM = milesToKm(100);
 
 export function kmToMiles(km: number): number {
   return km / 1.60934;

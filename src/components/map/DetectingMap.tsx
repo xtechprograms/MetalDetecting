@@ -32,6 +32,7 @@ type MapProps = {
   selectedLocation?: { lat: number; lng: number } | null;
   radiusKm?: number | null;
   historyMarkers?: { id: string; lat: number; lng: number; title: string; label?: string }[];
+  onHistoryMarkerClick?: (id: string) => void;
 };
 
 export function DetectingMap({
@@ -44,6 +45,7 @@ export function DetectingMap({
   selectedLocation = null,
   radiusKm = null,
   historyMarkers = [],
+  onHistoryMarkerClick,
 }: MapProps) {
   const [mounted, setMounted] = useState(false);
   const heightClass = MAP_SIZE_CLASSES[size];
@@ -75,6 +77,7 @@ export function DetectingMap({
         selectedLocation={selectedLocation}
         radiusKm={radiusKm}
         historyMarkers={historyMarkers}
+        onHistoryMarkerClick={onHistoryMarkerClick}
       />
     </div>
   );

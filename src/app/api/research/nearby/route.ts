@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { geocodeZipCode, geocodeQuery, fetchNearbyHistorySites } from "@/lib/research";
-import { parseRadiusToKm, type UnitSystem } from "@/lib/geo";
+import { parseRadiusToKm, MAX_RADIUS_KM, type UnitSystem } from "@/lib/geo";
 import type { NearbyHistoryResult } from "@/types/database";
 
 export async function GET(request: NextRequest) {
@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
 
   const radiusKm = parseRadiusToKm(radiusValue, unit);
 
-  if (radiusKm > 80) {
-    return NextResponse.json({ error: "Maximum search radius is 50 miles / 80 km" }, { status: 400 });
+  if (radiusKm > MAX_RADIUS_KM) {
+    return NextResponse.json({ error: "Maximum search radius is 100 miles / 100 km" }, { status: 400 });
   }
 
   const locationQuery = zip?.trim() || query?.trim();
