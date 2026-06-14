@@ -28,6 +28,8 @@ import {
 } from "@/lib/geo";
 import { createClient } from "@/lib/supabase/client";
 import { HistoryDetailModal } from "@/components/research/HistoryDetailModal";
+import { OldMapsSection } from "@/components/research/OldMapsSection";
+import type { OldMapRecord } from "@/types/database";
 
 type SearchMode = "area" | "nearby";
 
@@ -117,6 +119,10 @@ export function ResearchPanel() {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [bookmarking, setBookmarking] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [oldMaps, setOldMaps] = useState<OldMapRecord[]>([]);
+  const [oldMapResources, setOldMapResources] = useState<OldMapRecord[]>([]);
+  const [oldMapsLoading, setOldMapsLoading] = useState(false);
+  const [oldMapsLabel, setOldMapsLabel] = useState("");
 
   useEffect(() => {
     setUnitSystem(readStoredUnitSystem());
@@ -127,6 +133,37 @@ export function ResearchPanel() {
     storeUnitSystem(unit);
   }
 
+  async function loadOldMaps(
+    researchLat: number,
+    researchLng: number,
+    label: string,
+    countryCode: string
+  ) {
+    setOldMapsLoading(true);
+    setOldMaps([]);
+    setOldMapResources([]);
+    setOldMapsLabel(label);
+
+    try {
+      const params = new URLSearchParams({
+        lat: String(researchLat),
+        lng: String(researchLng),
+        country: countryCode,
+      });
+      if (zipCode.trim()) params.set("zip", zipCode.trim());
+
+      const res = await fetch(`/api/research/old-maps?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOldMaps(data.maps || []);
+        setOldMapResources(data.externalResources || []);
+      }
+    } catch {
+      // Old maps are supplementary — don't block the main search
+    }
+    setOldMapsLoading(false);
+  }
+
   async function researchLocation(researchLat: number, researchLng: number) {
     setLoading(true);
     setError(null);
@@ -135,12 +172,15 @@ export function ResearchPanel() {
     setBookmarked(false);
     setNearbyResult(null);
     setSelectedSite(null);
+    setOldMaps([]);
+    setOldMapResources([]);
 
     try {
       const res = await fetch(`/api/research?lat=${researchLat}&lng=${researchLng}`);
       if (!res.ok) throw new Error("Failed to fetch area history");
       const data: AreaHistory = await res.json();
       setHistory(data);
+      loadOldMaps(researchLat, researchLng, data.placeName, country);
     } catch {
       setError("Unable to research this location. Please try again.");
     }
@@ -155,6 +195,8 @@ export function ResearchPanel() {
     setError(null);
     setNearbyResult(null);
     setSelectedSite(null);
+    setOldMaps([]);
+    setOldMapResources([]);
 
     try {
       const res = await fetch(`/api/research?q=${encodeURIComponent(searchQuery.trim())}`);
@@ -168,6 +210,7 @@ export function ResearchPanel() {
       setLat(data.coordinates.lat);
       setLng(data.coordinates.lng);
       setBookmarked(false);
+      loadOldMaps(data.coordinates.lat, data.coordinates.lng, data.placeName, country);
     } catch {
       setError("Search failed. Please try again.");
     }
@@ -183,6 +226,8 @@ export function ResearchPanel() {
     setHistory(null);
     setSelectedSite(null);
     setBookmarked(false);
+    setOldMaps([]);
+    setOldMapResources([]);
 
     try {
       const params = new URLSearchParams({
@@ -204,6 +249,12 @@ export function ResearchPanel() {
       setNearbyResult(result);
       setLat(result.center.lat);
       setLng(result.center.lng);
+      loadOldMaps(
+        result.center.lat,
+        result.center.lng,
+        result.center.postalCode || zipCode.trim(),
+        country
+      );
     } catch {
       setError("Nearby search failed. Please try again.");
     }
@@ -507,6 +558,13 @@ export function ResearchPanel() {
             </p>
           </div>
 
+          <OldMapsSection
+            maps={oldMaps}
+            resources={oldMapResources}
+            loading={oldMapsLoading}
+            locationLabel={oldMapsLabel || nearbyResult.center.postalCode || zipCode}
+          />
+
           {nearbyResult.sites.length === 0 ? (
             <div className="glass-card p-8 text-center text-slate-400 text-sm">
               No historical sites found in this radius. Try a larger search area or a different zip
@@ -562,6 +620,12 @@ export function ResearchPanel() {
 
       {history && !loading && !modalOpen && mode === "area" && (
         <div className="space-y-4">
+          <OldMapsSection
+            maps={oldMaps}
+            resources={oldMapResources}
+            loading={oldMapsLoading}
+            locationLabel={oldMapsLabel || history.placeName}
+          />
           <div className="flex justify-end">
             <button
               onClick={bookmarkSite}

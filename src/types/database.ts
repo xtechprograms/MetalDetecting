@@ -164,6 +164,28 @@ export type NearbyHistoryResult = {
   sites: NearbyHistorySite[];
 };
 
+export type OldMapRecord = {
+  id: string;
+  title: string;
+  year: number;
+  scale: number;
+  scaleLabel: string;
+  series: string;
+  state?: string;
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
+  downloadUrl: string | null;
+  viewUrl: string;
+  description: string;
+  source: "usgs" | "resource";
+};
+
+export type OldMapsResult = {
+  location: GeocodedLocation;
+  maps: OldMapRecord[];
+  externalResources: OldMapRecord[];
+};
+
 export type DashboardStats = {
   totalFinds: number;
   mapFinds: number;

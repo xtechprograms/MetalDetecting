@@ -11,8 +11,8 @@ export default function ResearchPage() {
         <h1 className="section-heading mb-2">Area Research</h1>
         <p className="text-slate-400 max-w-2xl">
           Research the history of any location worldwide before you detect. Search by place name,
-          zip/postal code, or GPS — find the closest historical sites near you in miles or
-          kilometers.
+          zip/postal code, or GPS — find nearby history and browse old topographic maps for your
+          area in miles or kilometers.
         </p>
       </div>
       <ResearchPanel />
