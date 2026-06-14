@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Compass, Map, Search, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { NavbarClient } from "./NavbarClient";
 
 const navLinks = [
@@ -10,23 +11,37 @@ const navLinks = [
 ];
 
 export async function Navbar() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  let user = null;
   let profile = null;
-  if (user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("username, display_name, avatar_url")
-      .eq("id", user.id)
-      .single();
-    profile = data;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      user = authUser;
+
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("username, display_name, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        profile = data;
+      }
+    } catch {
+      // Render public nav if Supabase is unavailable
+    }
   }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800/60 bg-slate-950/80 backdrop-blur-xl">
+      {!isSupabaseConfigured() && (
+        <div className="bg-amber-900/40 border-b border-amber-700/40 text-amber-200 text-xs text-center py-2 px-4">
+          Database not connected — add Supabase env vars in Netlify and redeploy.
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-3 group">
