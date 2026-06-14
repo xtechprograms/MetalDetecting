@@ -23,7 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { useRouter, usePathname } from "next/navigation";
 import { getInitials } from "@/lib/utils";
-import { canModerate, isAdmin } from "@/lib/forum/permissions";
+import { isAdmin, showModerationPanel } from "@/lib/forum/permissions";
 import type { UserRole } from "@/types/database";
 
 const mobileNavLinks = [
@@ -53,7 +53,7 @@ export function NavbarClient({
   const router = useRouter();
   const pathname = usePathname();
   const role = (profile?.role as UserRole) || "user";
-  const showModeration = canModerate(role);
+  const showModeration = showModerationPanel(role);
   const showAdmin = isAdmin(role);
 
   useEffect(() => {

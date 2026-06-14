@@ -7,13 +7,16 @@ import { uploadForumImages } from "@/lib/forum/uploadForumImages";
 import { ForumImageUpload } from "@/components/forum/ForumImageUpload";
 import type { ForumCategory } from "@/types/database";
 import { Loader2, AlertCircle } from "lucide-react";
+import { ForumRestrictionNotice } from "@/components/forum/ForumRestrictionNotice";
 
 export function CreateThreadForm({
   categories,
   defaultCategorySlug,
+  restrictionMessage,
 }: {
   categories: ForumCategory[];
   defaultCategorySlug?: string;
+  restrictionMessage?: string | null;
 }) {
   const [categoryId, setCategoryId] = useState(
     categories.find((c) => c.slug === defaultCategorySlug)?.id || categories[0]?.id || ""
@@ -25,6 +28,10 @@ export function CreateThreadForm({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  if (restrictionMessage) {
+    return <ForumRestrictionNotice message={restrictionMessage} />;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

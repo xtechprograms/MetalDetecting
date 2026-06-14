@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MessagesSquare, PlusCircle, Pin, Lock, Shield, ShieldAlert } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { RoleBadge } from "@/components/forum/RoleBadge";
-import { canViewModerationQueue } from "@/lib/forum/permissions";
+import { showModerationPanel, isForumPostingAllowed } from "@/lib/forum/permissions";
 import type { UserRole } from "@/types/database";
 
 export const metadata = { title: "Forum" };
@@ -15,17 +15,19 @@ export default async function ForumPage() {
   } = await supabase.auth.getUser();
 
   let currentRole: UserRole = "user";
+  let canPost = false;
   if (user) {
     const { data: me } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, forum_banned, forum_suspended_until, forum_moderation_reason")
       .eq("id", user.id)
       .maybeSingle();
     currentRole = (me?.role as UserRole) || "user";
+    canPost = isForumPostingAllowed(me);
   }
 
   let pendingReports = 0;
-  if (canViewModerationQueue(currentRole)) {
+  if (currentRole === "mod" || currentRole === "admin") {
     const { count } = await supabase
       .from("forum_reports")
       .select("*", { count: "exact", head: true })
@@ -60,7 +62,7 @@ export default async function ForumPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:justify-end w-full sm:w-auto">
-          {canViewModerationQueue(currentRole) && (
+          {showModerationPanel(currentRole) && (
             <Link href="/forum/moderation" className="btn-secondary text-sm relative">
               <ShieldAlert className="w-4 h-4" />
               Moderation
@@ -77,12 +79,12 @@ export default async function ForumPage() {
               Admin
             </Link>
           )}
-          {user ? (
+          {user && canPost ? (
             <Link href="/forum/new" className="btn-primary text-sm">
               <PlusCircle className="w-4 h-4" />
               New Thread
             </Link>
-          ) : (
+          ) : user && !canPost ? null : (
             <Link href="/login?redirect=/forum/new" className="btn-primary text-sm">
               Sign in to Post
             </Link>

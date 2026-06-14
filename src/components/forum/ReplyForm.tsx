@@ -6,8 +6,17 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadForumImages } from "@/lib/forum/uploadForumImages";
 import { ForumImageUpload } from "@/components/forum/ForumImageUpload";
 import { Loader2, AlertCircle } from "lucide-react";
+import { ForumRestrictionNotice } from "@/components/forum/ForumRestrictionNotice";
 
-export function ReplyForm({ threadId, isLocked }: { threadId: string; isLocked: boolean }) {
+export function ReplyForm({
+  threadId,
+  isLocked,
+  restrictionMessage,
+}: {
+  threadId: string;
+  isLocked: boolean;
+  restrictionMessage?: string | null;
+}) {
   const [content, setContent] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,6 +30,10 @@ export function ReplyForm({ threadId, isLocked }: { threadId: string; isLocked: 
         This thread is locked — no new replies allowed.
       </div>
     );
+  }
+
+  if (restrictionMessage) {
+    return <ForumRestrictionNotice message={restrictionMessage} />;
   }
 
   async function handleSubmit(e: React.FormEvent) {

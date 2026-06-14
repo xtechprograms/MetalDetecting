@@ -1,4 +1,4 @@
-import type { ForumReportReason, ForumReportStatus, UserRole } from "@/types/database";
+import type { ForumReportReason, ForumReportStatus, Profile, UserRole } from "@/types/database";
 
 export function canModerate(role: UserRole | undefined | null): boolean {
   return role === "mod" || role === "admin";
@@ -6,6 +6,65 @@ export function canModerate(role: UserRole | undefined | null): boolean {
 
 export function isAdmin(role: UserRole | undefined | null): boolean {
   return role === "admin";
+}
+
+export function isModerator(role: UserRole | undefined | null): boolean {
+  return role === "mod";
+}
+
+/** Moderation panel link — mods only; admins use the admin panel instead */
+export function showModerationPanel(role: UserRole | undefined | null): boolean {
+  return role === "mod";
+}
+
+export type ForumRestrictionProfile = Pick<
+  Profile,
+  "forum_banned" | "forum_suspended_until" | "forum_moderation_reason"
+>;
+
+export function isForumPostingAllowed(
+  profile: ForumRestrictionProfile | null | undefined
+): boolean {
+  if (!profile) return false;
+  if (profile.forum_banned) return false;
+  if (profile.forum_suspended_until) {
+    return new Date(profile.forum_suspended_until) <= new Date();
+  }
+  return true;
+}
+
+export function getForumRestrictionMessage(
+  profile: ForumRestrictionProfile | null | undefined
+): string | null {
+  if (!profile || isForumPostingAllowed(profile)) return null;
+
+  if (profile.forum_banned) {
+    const reason = profile.forum_moderation_reason
+      ? ` Reason: ${profile.forum_moderation_reason}`
+      : "";
+    return `Your forum access has been permanently banned.${reason}`;
+  }
+
+  if (profile.forum_suspended_until) {
+    const until = new Date(profile.forum_suspended_until);
+    const reason = profile.forum_moderation_reason
+      ? ` Reason: ${profile.forum_moderation_reason}`
+      : "";
+    return `You are suspended from posting until ${until.toLocaleString()}.${reason}`;
+  }
+
+  return "You cannot post in the forum at this time.";
+}
+
+export function isForumRestricted(
+  profile: ForumRestrictionProfile | null | undefined
+): boolean {
+  if (!profile) return false;
+  if (profile.forum_banned) return true;
+  if (profile.forum_suspended_until) {
+    return new Date(profile.forum_suspended_until) > new Date();
+  }
+  return false;
 }
 
 export function canEditThread(

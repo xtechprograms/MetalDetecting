@@ -15,6 +15,11 @@ export type Profile = {
   forum_thread_count: number;
   forum_post_count: number;
   find_count: number;
+  forum_banned: boolean;
+  forum_suspended_until: string | null;
+  forum_moderation_reason: string | null;
+  forum_moderated_by: string | null;
+  forum_moderated_at: string | null;
   created_at: string;
   updated_at: string;
 };

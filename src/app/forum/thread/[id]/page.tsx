@@ -9,6 +9,7 @@ import { ForumLikeButton } from "@/components/forum/ForumLikeButton";
 import { EditableForumContent } from "@/components/forum/EditableForumContent";
 import { ArrowLeft, Pin, Lock } from "lucide-react";
 import type { UserRole } from "@/types/database";
+import { getForumRestrictionMessage } from "@/lib/forum/permissions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -20,13 +21,15 @@ export default async function ThreadPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   let currentRole: UserRole = "user";
+  let restrictionMessage: string | null = null;
   if (user) {
     const { data: me } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, forum_banned, forum_suspended_until, forum_moderation_reason")
       .eq("id", user.id)
       .maybeSingle();
     currentRole = (me?.role as UserRole) || "user";
+    restrictionMessage = getForumRestrictionMessage(me);
   }
 
   const { data: thread } = await supabase
@@ -211,7 +214,11 @@ export default async function ThreadPage({ params }: Props) {
       </div>
 
       {user ? (
-        <ReplyForm threadId={thread.id} isLocked={thread.is_locked} />
+        <ReplyForm
+          threadId={thread.id}
+          isLocked={thread.is_locked}
+          restrictionMessage={restrictionMessage}
+        />
       ) : (
         <div className="glass-card p-6 text-center">
           <p className="text-slate-400 mb-4">Sign in to join the discussion</p>
