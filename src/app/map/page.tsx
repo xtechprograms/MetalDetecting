@@ -16,7 +16,7 @@ export default async function MapPage() {
       const supabase = await createClient();
       const { data } = await supabase
         .from("finds")
-        .select("*")
+        .select("*, profiles(username, display_name)")
         .eq("show_on_map", true)
         .not("latitude", "is", null)
         .not("longitude", "is", null)

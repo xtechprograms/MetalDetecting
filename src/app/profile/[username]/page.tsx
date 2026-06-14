@@ -57,10 +57,19 @@ export default async function ProfilePage({ params }: Props) {
     .eq("user_id", profile.id)
     .order("found_date", { ascending: false });
 
+  const visibleFinds =
+    finds?.filter((find) =>
+      isOwnProfile ? true : find.show_on_map && find.is_anonymous === false
+    ) ?? [];
+
   const { count: findCount } = await supabase
     .from("finds")
     .select("*", { count: "exact", head: true })
     .eq("user_id", profile.id);
+
+  const displayedFindCount = isOwnProfile
+    ? profile.find_count ?? findCount ?? finds?.length ?? 0
+    : visibleFinds.length;
 
   let friendshipStatus: string | null = null;
   if (user && !isOwnProfile) {
@@ -169,14 +178,14 @@ export default async function ProfilePage({ params }: Props) {
               )}
               <span className="flex items-center gap-1">
                 <Compass className="w-4 h-4 text-gold-500" />
-                {profile.find_count ?? findCount ?? 0} finds logged
+                {displayedFindCount} finds logged
               </span>
             </div>
 
             <div className="mt-6">
               <UserStatsBar
                 stats={{
-                  find_count: profile.find_count ?? findCount ?? 0,
+                  find_count: displayedFindCount,
                   forum_thread_count: profile.forum_thread_count ?? 0,
                   forum_post_count: profile.forum_post_count ?? 0,
                   total_forum_activity:
@@ -212,13 +221,10 @@ export default async function ProfilePage({ params }: Props) {
           {isOwnProfile ? "My Finds" : `${profile.display_name}'s Finds`}
         </h2>
 
-        {finds && finds.length > 0 ? (
+        {visibleFinds.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {finds.map((find) => {
+            {visibleFinds.map((find) => {
               const cat = FIND_CATEGORIES.find((c) => c.value === find.category);
-              const isVisible = isOwnProfile || find.show_on_map;
-
-              if (!isVisible) return null;
 
               return (
                 <div
@@ -238,18 +244,28 @@ export default async function ProfilePage({ params }: Props) {
                     </div>
                   )}
                   <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
                       <h3 className="font-semibold text-sm">{find.title}</h3>
-                      {find.show_on_map && (
-                        <span title="Public on map">
-                          <Eye className="w-4 h-4 text-green-400 shrink-0" aria-hidden="true" />
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isOwnProfile && find.is_anonymous !== false && (
+                          <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                            Anonymous
+                          </span>
+                        )}
+                        {find.show_on_map && (
+                          <span title="Public on map">
+                            <Eye className="w-4 h-4 text-green-400 shrink-0" aria-hidden="true" />
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
                       {cat?.label} · {formatDate(find.found_date)}
                     </p>
-                    {find.latitude != null && find.longitude != null && find.show_on_map && (
+                    {find.latitude != null &&
+                      find.longitude != null &&
+                      find.show_on_map &&
+                      (isOwnProfile || find.is_anonymous === false) && (
                       <p className="text-xs text-slate-600 mt-1">
                         {formatCoordinates(find.latitude, find.longitude)}
                       </p>

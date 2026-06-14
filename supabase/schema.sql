@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS finds (
   latitude DOUBLE PRECISION,
   longitude DOUBLE PRECISION,
   show_on_map BOOLEAN DEFAULT false,
+  is_anonymous BOOLEAN NOT NULL DEFAULT true,
   photo_url TEXT,
   depth_cm INTEGER,
   signal_id TEXT,

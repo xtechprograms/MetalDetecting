@@ -95,6 +95,7 @@ export type Find = {
   latitude: number | null;
   longitude: number | null;
   show_on_map: boolean;
+  is_anonymous: boolean;
   photo_url: string | null;
   depth_cm: number | null;
   signal_id: string | null;

@@ -17,7 +17,9 @@ import {
   Crosshair,
   Eye,
   EyeOff,
+  Shield,
 } from "lucide-react";
+
 export function LogFindForm() {
   const router = useRouter();
   const supabase = createClient();
@@ -33,6 +35,7 @@ export function LogFindForm() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [showOnMap, setShowOnMap] = useState(false);
+  const [postAnonymously, setPostAnonymously] = useState(true);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -117,6 +120,7 @@ export function LogFindForm() {
       latitude,
       longitude,
       show_on_map: showOnMap && latitude != null && longitude != null,
+      is_anonymous: postAnonymously,
       photo_url: photoUrl,
       depth_cm: depthCm ? parseInt(depthCm) : null,
       signal_id: signalId || null,
@@ -364,6 +368,55 @@ export function LogFindForm() {
           }
         />
 
+        {/* Privacy — anonymous by default */}
+        <div className="space-y-3">
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+              postAnonymously
+                ? "bg-slate-800/30 border-slate-700/50"
+                : "bg-amber-950/20 border-amber-700/40"
+            }`}
+          >
+            <div className="flex items-center gap-3 min-w-0 pr-3">
+              <Shield
+                className={`w-5 h-5 shrink-0 ${postAnonymously ? "text-gold-400" : "text-amber-400"}`}
+              />
+              <div>
+                <p className="font-medium text-sm">Post anonymously (recommended)</p>
+                <p className="text-xs text-slate-500">
+                  Other users cannot link this find or location to your profile
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={postAnonymously}
+              onClick={() => setPostAnonymously(!postAnonymously)}
+              className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
+                postAnonymously ? "bg-gold-500" : "bg-slate-700"
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                  postAnonymously ? "left-1" : "left-6"
+                }`}
+              />
+            </button>
+          </div>
+
+          {!postAnonymously && (
+            <div className="flex gap-2 p-4 rounded-xl bg-amber-950/30 border border-amber-700/40 text-amber-100/90 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <p>
+                Your username may be shown with this find. Other users can connect your
+                profile to this location, which could reveal where you detect. Only disable
+                anonymity if you are comfortable sharing that information.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Show on map toggle */}
         <div
           className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
@@ -381,7 +434,9 @@ export function LogFindForm() {
             <div>
               <p className="font-medium text-sm">Show on Global Map</p>
               <p className="text-xs text-slate-500">
-                Share this find&apos;s location with the community
+                {postAnonymously
+                  ? "Share the find location without revealing who posted it"
+                  : "Share this find's location and your profile with the community"}
               </p>
             </div>
           </div>

@@ -207,13 +207,17 @@ export default function MapInner({
                 <p className="text-xs text-slate-500">
                   Found {formatDate(find.found_date)}
                 </p>
-                {find.profiles && (
-                  <Link
-                    href={`/profile/${find.profiles.username}`}
-                    className="text-xs text-gold-500 hover:underline mt-1 block"
-                  >
-                    by @{find.profiles.username}
-                  </Link>
+                {find.is_anonymous !== false ? (
+                  <p className="text-xs text-slate-500 mt-1">Anonymous detectorist</p>
+                ) : (
+                  find.profiles && (
+                    <Link
+                      href={`/profile/${find.profiles.username}`}
+                      className="text-xs text-gold-500 hover:underline mt-1 block"
+                    >
+                      by @{find.profiles.username}
+                    </Link>
+                  )
                 )}
               </div>
             </Popup>

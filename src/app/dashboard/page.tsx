@@ -9,6 +9,7 @@ import {
   Compass,
   TrendingUp,
   Eye,
+  Shield,
   MessagesSquare,
 } from "lucide-react";
 import { FIND_CATEGORIES, formatDate, formatCoordinates } from "@/lib/utils";
@@ -168,9 +169,24 @@ export default async function DashboardPage() {
                     )}
                   </div>
                   {find.show_on_map && (
-                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full shrink-0 self-start sm:self-center">
-                      <Eye className="w-3 h-3" />
-                      Public
+                    <span
+                      className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full shrink-0 self-start sm:self-center ${
+                        find.is_anonymous !== false
+                          ? "text-slate-400 bg-slate-800"
+                          : "text-green-400 bg-green-400/10"
+                      }`}
+                    >
+                      {find.is_anonymous !== false ? (
+                        <>
+                          <Shield className="w-3 h-3" />
+                          Anonymous
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" />
+                          Public
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
