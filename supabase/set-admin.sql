@@ -1,0 +1,2 @@
+-- Make yourself the first admin (change username to yours!)
+-- UPDATE public.profiles SET role = 'admin' WHERE username = 'your_username';

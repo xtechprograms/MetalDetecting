@@ -9,6 +9,7 @@ import {
   Compass,
   TrendingUp,
   Eye,
+  MessagesSquare,
 } from "lucide-react";
 import { FIND_CATEGORIES, formatDate, formatCoordinates } from "@/lib/utils";
 
@@ -112,6 +113,14 @@ export default async function DashboardPage() {
           <MapPin className="w-6 h-6 text-gold-400 mb-3 group-hover:scale-110 transition-transform" />
           <h3 className="font-semibold mb-1">View Global Map</h3>
           <p className="text-xs text-slate-500">See community discoveries</p>
+        </Link>
+        <Link
+          href="/forum"
+          className="glass-card p-6 hover:border-gold-500/30 transition-all group"
+        >
+          <MessagesSquare className="w-6 h-6 text-gold-400 mb-3 group-hover:scale-110 transition-transform" />
+          <h3 className="font-semibold mb-1">Forum</h3>
+          <p className="text-xs text-slate-500">Join the discussion</p>
         </Link>
         <Link
           href="/community"

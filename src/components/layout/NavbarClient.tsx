@@ -15,6 +15,7 @@ import {
   Map,
   Search,
   Users,
+  MessagesSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { getInitials } from "@/lib/utils";
 
 const mobileNavLinks = [
+  { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/map", label: "World Map", icon: Map },
   { href: "/research", label: "Research", icon: Search },
   { href: "/community", label: "Community", icon: Users },

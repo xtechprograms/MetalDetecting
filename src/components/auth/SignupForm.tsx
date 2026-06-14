@@ -34,7 +34,7 @@ export function SignupForm() {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -49,6 +49,17 @@ export function SignupForm() {
       setError(signUpError.message);
       setLoading(false);
       return;
+    }
+
+    if (data.user) {
+      await supabase.from("profiles").upsert(
+        {
+          id: data.user.id,
+          username: username.toLowerCase(),
+          display_name: displayName || username,
+        },
+        { onConflict: "id" }
+      );
     }
 
     setSuccess(true);

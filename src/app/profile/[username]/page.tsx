@@ -2,6 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AddFriendButton } from "@/components/community/FriendActions";
+import { RoleBadge } from "@/components/forum/RoleBadge";
+import { UserStatsBar } from "@/components/forum/UserStatsBar";
+import type { UserRole } from "@/types/database";
 import {
   MapPin,
   Compass,
@@ -90,9 +93,12 @@ export default async function ProfilePage({ params }: Props) {
 
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-              <h1 className="font-display text-3xl font-bold gold-gradient-text">
-                {profile.display_name}
-              </h1>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-display text-3xl font-bold gold-gradient-text">
+                  {profile.display_name}
+                </h1>
+                <RoleBadge role={(profile.role as UserRole) || "user"} showLabel size="md" />
+              </div>
               {isOwnProfile ? (
                 <Link href={`/profile/${username}/edit`} className="btn-secondary text-sm py-2">
                   <Settings className="w-4 h-4" />
@@ -128,8 +134,20 @@ export default async function ProfilePage({ params }: Props) {
               )}
               <span className="flex items-center gap-1">
                 <Compass className="w-4 h-4 text-gold-500" />
-                {findCount || 0} finds logged
+                {profile.find_count ?? findCount ?? 0} finds logged
               </span>
+            </div>
+
+            <div className="mt-6">
+              <UserStatsBar
+                stats={{
+                  find_count: profile.find_count ?? findCount ?? 0,
+                  forum_thread_count: profile.forum_thread_count ?? 0,
+                  forum_post_count: profile.forum_post_count ?? 0,
+                  total_forum_activity:
+                    (profile.forum_thread_count ?? 0) + (profile.forum_post_count ?? 0),
+                }}
+              />
             </div>
 
             {(profile.detector_brand || profile.detector_model || profile.detector_type) && (
