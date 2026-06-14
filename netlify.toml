@@ -1,5 +1,4 @@
-# Next.js on Netlify: do NOT set a Publish directory in the Netlify UI.
-# Leave it blank — @netlify/plugin-nextjs handles deployment output.
+# Next.js on Netlify: publish must be ".next" (not empty — empty defaults to repo root and breaks the plugin)
 
 [build]
   command = "npm run build"
