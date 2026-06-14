@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { DetectingMap } from "@/components/map/DetectingMap";
+import type { Find } from "@/types/database";
 import { Map, Globe } from "lucide-react";
 
 export const metadata = {
@@ -7,16 +9,24 @@ export const metadata = {
 };
 
 export default async function MapPage() {
-  const supabase = await createClient();
+  let finds: Find[] = [];
 
-  const { data: finds } = await supabase
-    .from("finds")
-    .select("*, profiles(username, display_name, avatar_url)")
-    .eq("show_on_map", true)
-    .not("latitude", "is", null)
-    .not("longitude", "is", null)
-    .order("found_date", { ascending: false })
-    .limit(500);
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("finds")
+        .select("*")
+        .eq("show_on_map", true)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .order("found_date", { ascending: false })
+        .limit(500);
+      finds = data ?? [];
+    } catch {
+      finds = [];
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -31,14 +41,14 @@ export default async function MapPage() {
           </p>
         </div>
         <div className="glass-card px-4 py-2 text-sm">
-          <span className="text-gold-400 font-semibold">{finds?.length || 0}</span>
+          <span className="text-gold-400 font-semibold">{finds.length}</span>
           <span className="text-slate-400"> public finds mapped</span>
         </div>
       </div>
 
-      <DetectingMap finds={finds || []} height="600px" zoom={2} />
+      <DetectingMap finds={finds} height="600px" zoom={2} />
 
-      {(!finds || finds.length === 0) && (
+      {finds.length === 0 && (
         <div className="glass-card p-8 mt-6 text-center">
           <Map className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <p className="text-slate-400">
