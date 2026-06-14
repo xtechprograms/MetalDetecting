@@ -14,6 +14,7 @@ import {
   Eye,
 } from "lucide-react";
 import { FIND_CATEGORIES, formatDate, formatCoordinates, getInitials } from "@/lib/utils";
+import { DeleteFindButton } from "@/components/finds/DeleteFindButton";
 
 type Props = {
   params: Promise<{ username: string }>;
@@ -269,6 +270,15 @@ export default async function ProfilePage({ params }: Props) {
                       <p className="text-xs text-slate-600 mt-1">
                         {formatCoordinates(find.latitude, find.longitude)}
                       </p>
+                    )}
+                    {isOwnProfile && (
+                      <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-end">
+                        <DeleteFindButton
+                          findId={find.id}
+                          findTitle={find.title}
+                          photoUrl={find.photo_url}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>

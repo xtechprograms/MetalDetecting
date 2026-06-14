@@ -13,6 +13,7 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { FIND_CATEGORIES, formatDate, formatCoordinates } from "@/lib/utils";
+import { DeleteFindButton } from "@/components/finds/DeleteFindButton";
 
 export const metadata = {
   title: "Dashboard",
@@ -168,27 +169,34 @@ export default async function DashboardPage() {
                       </p>
                     )}
                   </div>
-                  {find.show_on_map && (
-                    <span
-                      className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full shrink-0 self-start sm:self-center ${
-                        find.is_anonymous !== false
-                          ? "text-slate-400 bg-slate-800"
-                          : "text-green-400 bg-green-400/10"
-                      }`}
-                    >
-                      {find.is_anonymous !== false ? (
-                        <>
-                          <Shield className="w-3 h-3" />
-                          Anonymous
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3 h-3" />
-                          Public
-                        </>
-                      )}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                    {find.show_on_map && (
+                      <span
+                        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
+                          find.is_anonymous !== false
+                            ? "text-slate-400 bg-slate-800"
+                            : "text-green-400 bg-green-400/10"
+                        }`}
+                      >
+                        {find.is_anonymous !== false ? (
+                          <>
+                            <Shield className="w-3 h-3" />
+                            Anonymous
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3 h-3" />
+                            Public
+                          </>
+                        )}
+                      </span>
+                    )}
+                    <DeleteFindButton
+                      findId={find.id}
+                      findTitle={find.title}
+                      photoUrl={find.photo_url}
+                    />
+                  </div>
                 </div>
               );
             })}
