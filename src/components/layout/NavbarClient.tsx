@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   Menu,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getInitials } from "@/lib/utils";
 
 const mobileNavLinks = [
@@ -44,7 +44,36 @@ export function NavbarClient({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMenuOpen(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   async function handleSignOut() {
     if (!isSupabaseConfigured()) return;
@@ -67,12 +96,13 @@ export function NavbarClient({
               <LayoutDashboard className="w-4 h-4" />
               <span className="sr-only">Dashboard</span>
             </Link>
-            <div className="relative">
+            <div className="relative" ref={accountMenuRef}>
               <button
                 type="button"
                 aria-label="Account menu"
                 aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(!menuOpen)}
+                aria-haspopup="menu"
+                onClick={() => setMenuOpen((open) => !open)}
                 className="flex items-center justify-center min-h-11 min-w-11 p-1 rounded-xl hover:bg-slate-800/50 transition-colors"
               >
                 {profile?.avatar_url ? (
@@ -89,9 +119,10 @@ export function NavbarClient({
                 )}
               </button>
               {menuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] glass-card p-2 z-50 animate-fade-in">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] glass-card p-2 z-[100] animate-fade-in shadow-xl"
+                >
                     <div className="px-3 py-2 border-b border-slate-700/50 mb-2">
                       <p className="font-semibold text-sm truncate">{profile?.display_name}</p>
                       <p className="text-xs text-slate-500 truncate">@{profile?.username}</p>
@@ -122,14 +153,16 @@ export function NavbarClient({
                     </Link>
                     <button
                       type="button"
-                      onClick={handleSignOut}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleSignOut();
+                      }}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-red-900/30 text-red-400 text-sm w-full min-h-[44px]"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
                     </button>
                   </div>
-                </>
               )}
             </div>
           </>
