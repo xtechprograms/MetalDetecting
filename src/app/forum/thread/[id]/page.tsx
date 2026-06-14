@@ -6,6 +6,7 @@ import { ReplyForm } from "@/components/forum/ReplyForm";
 import { ThreadModeration, PostModeration } from "@/components/forum/ModerationActions";
 import { ReportButton } from "@/components/forum/ReportButton";
 import { ForumLikeButton } from "@/components/forum/ForumLikeButton";
+import { EditableForumContent } from "@/components/forum/EditableForumContent";
 import { ArrowLeft, Pin, Lock } from "lucide-react";
 import type { UserRole } from "@/types/database";
 
@@ -82,20 +83,17 @@ export default async function ThreadPage({ params }: Props) {
 
       <article className="glass-card p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              {thread.is_pinned && (
-                <span className="text-xs bg-gold-500/20 text-gold-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Pin className="w-3 h-3" /> Pinned
-                </span>
-              )}
-              {thread.is_locked && (
-                <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Locked
-                </span>
-              )}
-            </div>
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-slate-100 break-words">{thread.title}</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            {thread.is_pinned && (
+              <span className="text-xs bg-gold-500/20 text-gold-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Pin className="w-3 h-3" /> Pinned
+              </span>
+            )}
+            {thread.is_locked && (
+              <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Locked
+              </span>
+            )}
           </div>
           {user && (
             <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -130,9 +128,15 @@ export default async function ThreadPage({ params }: Props) {
           />
         )}
 
-        <div className="mt-6 pt-6 border-t border-slate-700/50 text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">
-          {thread.content}
-        </div>
+        <EditableForumContent
+          mode="thread"
+          id={thread.id}
+          ownerId={thread.user_id}
+          currentUserId={user?.id ?? null}
+          title={thread.title}
+          content={thread.content}
+          imageUrls={thread.image_urls}
+        />
 
         <div className="mt-4 pt-4 border-t border-slate-700/30">
           <ForumLikeButton
@@ -184,7 +188,14 @@ export default async function ThreadPage({ params }: Props) {
                 </div>
               )}
             </div>
-            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">{post.content}</p>
+            <EditableForumContent
+              mode="reply"
+              id={post.id}
+              ownerId={post.user_id}
+              currentUserId={user?.id ?? null}
+              content={post.content}
+              imageUrls={post.image_urls}
+            />
             <div className="mt-3 pt-3 border-t border-slate-700/30">
               <ForumLikeButton
                 targetType="post"

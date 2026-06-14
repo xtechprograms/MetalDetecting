@@ -41,6 +41,7 @@ export type ForumThread = {
   reply_count: number;
   view_count: number;
   like_count: number;
+  image_urls: string[];
   last_reply_at: string | null;
   created_at: string;
   updated_at: string;
@@ -55,6 +56,7 @@ export type ForumPost = {
   content: string;
   is_deleted: boolean;
   like_count: number;
+  image_urls: string[];
   created_at: string;
   updated_at: string;
   profiles?: Pick<Profile, "username" | "display_name" | "avatar_url" | "role" | "forum_post_count" | "find_count">;
