@@ -194,16 +194,16 @@ export function NavbarClient({
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 z-40 bg-black/50 top-16"
+            className="md:hidden fixed inset-0 z-[60] bg-black/75 top-16"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="md:hidden fixed left-0 right-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto bg-slate-950/98 backdrop-blur-xl border-b border-slate-800 p-4 space-y-1 shadow-xl">
+          <div className="md:hidden fixed left-0 right-0 top-16 z-[70] max-h-[calc(100dvh-4rem)] overflow-y-auto bg-slate-950 border-b border-slate-700 p-4 space-y-1 shadow-2xl">
             {mobileNavLinks.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
                 onClick={() => setMobileOpen(false)}
               >
                 <Icon className="w-5 h-5 text-gold-500 shrink-0" />
@@ -214,7 +214,7 @@ export function NavbarClient({
               <>
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
                   onClick={() => setMobileOpen(false)}
                 >
                   <LayoutDashboard className="w-5 h-5 text-gold-500 shrink-0" />
@@ -222,7 +222,7 @@ export function NavbarClient({
                 </Link>
                 <Link
                   href="/profile/me"
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
                   onClick={() => setMobileOpen(false)}
                 >
                   <UserIcon className="w-5 h-5 text-gold-500 shrink-0" />
@@ -230,7 +230,7 @@ export function NavbarClient({
                 </Link>
                 <Link
                   href="/finds/new"
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
                   onClick={() => setMobileOpen(false)}
                 >
                   <PlusCircle className="w-5 h-5 text-gold-500 shrink-0" />
@@ -241,7 +241,7 @@ export function NavbarClient({
             {!user && (
               <Link
                 href="/login"
-                className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
                 onClick={() => setMobileOpen(false)}
               >
                 <LogIn className="w-5 h-5 text-gold-500 shrink-0" />
