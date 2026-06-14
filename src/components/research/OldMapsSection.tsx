@@ -5,7 +5,6 @@ import type { OldMapRecord } from "@/types/database";
 import {
   X,
   Download,
-  ExternalLink,
   Map,
   Loader2,
   ChevronLeft,
@@ -147,8 +146,7 @@ function HorizontalScrollRow({
         )}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth touch-pan-x"
-          style={{ scrollbarWidth: "thin" }}
+          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth touch-pan-x theme-scrollbar"
         >
           {children}
         </div>
@@ -236,15 +234,6 @@ function MapDetailModal({
                 Download GeoPDF
               </a>
             )}
-            <a
-              href={map.viewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary text-sm"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Open in map viewer
-            </a>
           </div>
         </div>
       </div>

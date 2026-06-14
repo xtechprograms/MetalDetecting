@@ -104,6 +104,32 @@
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12;
   }
 
+  .theme-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(51 65 85) rgb(15 23 42);
+  }
+
+  .theme-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-track {
+    @apply bg-slate-900 rounded-full;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gold-600/50;
+  }
+
+  .theme-scrollbar::-webkit-scrollbar-corner {
+    @apply bg-slate-900;
+  }
+
   .leaflet-container {
     @apply rounded-xl z-0;
     font-family: inherit;
