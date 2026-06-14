@@ -109,58 +109,6 @@ async function fetchUsgsHistoricalMaps(lat: number, lng: number, limit = 24): Pr
   }
 }
 
-function buildInternationalResources(location: GeocodedLocation): OldMapRecord[] {
-  const query = location.postalCode || location.placeName;
-
-  return [
-    {
-      id: "oldmapsonline",
-      title: "Old Maps Online",
-      year: 0,
-      scale: 0,
-      scaleLabel: "Various",
-      series: "Global archive",
-      thumbnailUrl: null,
-      previewUrl: null,
-      downloadUrl: null,
-      viewUrl: `https://www.oldmapsonline.org/en/search?q=${encodeURIComponent(query)}`,
-      description:
-        "Search millions of digitized historical maps from libraries worldwide, centered on your zip or postal code.",
-      source: "resource",
-    },
-    {
-      id: "openhistoricalmap",
-      title: "OpenHistoricalMap",
-      year: 0,
-      scale: 0,
-      scaleLabel: "Community mapped",
-      series: "Open data",
-      thumbnailUrl: null,
-      previewUrl: null,
-      downloadUrl: null,
-      viewUrl: `https://www.openhistoricalmap.org/#map=13/${location.lat}/${location.lng}`,
-      description:
-        "Explore community-mapped historical features — roads, buildings, and boundaries — around your search area.",
-      source: "resource",
-    },
-    {
-      id: "david-rumsey",
-      title: "David Rumsey Map Collection",
-      year: 0,
-      scale: 0,
-      scaleLabel: "Various",
-      series: "Stanford archive",
-      thumbnailUrl: null,
-      previewUrl: null,
-      downloadUrl: null,
-      viewUrl: `https://www.davidrumsey.com/luna/servlet/view/search?q=${encodeURIComponent(query)}`,
-      description:
-        "Browse one of the largest online collections of rare maps — useful for researching former settlements and land use.",
-      source: "resource",
-    },
-  ];
-}
-
 function isUnitedStates(country: string): boolean {
   const normalized = country.toLowerCase();
   return (
@@ -176,12 +124,10 @@ export async function fetchOldMapsForLocation(
   lng: number,
   location: GeocodedLocation
 ): Promise<OldMapsResult> {
-  const externalResources = buildInternationalResources(location);
-
   if (isUnitedStates(location.country)) {
     const maps = await fetchUsgsHistoricalMaps(lat, lng);
-    return { location, maps, externalResources };
+    return { location, maps };
   }
 
-  return { location, maps: [], externalResources };
+  return { location, maps: [] };
 }

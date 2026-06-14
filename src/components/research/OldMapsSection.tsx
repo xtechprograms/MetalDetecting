@@ -61,32 +61,10 @@ function MapCard({
   );
 }
 
-function ResourceCard({
-  resource,
-  onClick,
-}: {
-  resource: OldMapRecord;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="glass-card p-4 text-left hover:border-gold-500/30 transition-all shrink-0 snap-start w-[220px] sm:w-[260px] min-h-[120px] flex flex-col"
-    >
-      <h4 className="font-semibold text-sm text-slate-100">{resource.title}</h4>
-      <p className="text-xs text-slate-500 mt-2 line-clamp-3 flex-1">{resource.description}</p>
-      <p className="text-[11px] text-gold-500/80 mt-2">Tap for details</p>
-    </button>
-  );
-}
-
 function HorizontalScrollRow({
   children,
-  label,
 }: {
   children: React.ReactNode;
-  label?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -120,9 +98,6 @@ function HorizontalScrollRow({
 
   return (
     <div className="relative">
-      {label && (
-        <p className="text-xs text-slate-500 mb-2 px-1">{label}</p>
-      )}
       <div className="relative group/scroll">
         {canScrollLeft && (
           <button
@@ -243,12 +218,10 @@ function MapDetailModal({
 
 export function OldMapsSection({
   maps,
-  resources,
   loading,
   locationLabel,
 }: {
   maps: OldMapRecord[];
-  resources: OldMapRecord[];
   loading: boolean;
   locationLabel: string;
 }) {
@@ -263,7 +236,7 @@ export function OldMapsSection({
     );
   }
 
-  if (maps.length === 0 && resources.length === 0) return null;
+  if (maps.length === 0) return null;
 
   return (
     <>
@@ -283,30 +256,12 @@ export function OldMapsSection({
           )}
         </div>
 
-        {maps.length > 0 ? (
+        {maps.length > 0 && (
           <HorizontalScrollRow>
             {maps.map((map) => (
               <MapCard key={map.id} map={map} compact onClick={() => setSelectedMap(map)} />
             ))}
           </HorizontalScrollRow>
-        ) : (
-          <p className="text-sm text-slate-400 mb-4">
-            No USGS scanned topos at this point — browse archives below.
-          </p>
-        )}
-
-        {resources.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-slate-800/60">
-            <HorizontalScrollRow label="More map archives">
-              {resources.map((resource) => (
-                <ResourceCard
-                  key={resource.id}
-                  resource={resource}
-                  onClick={() => setSelectedMap(resource)}
-                />
-              ))}
-            </HorizontalScrollRow>
-          </div>
         )}
       </div>
 

@@ -183,7 +183,6 @@ export type OldMapRecord = {
 export type OldMapsResult = {
   location: GeocodedLocation;
   maps: OldMapRecord[];
-  externalResources: OldMapRecord[];
 };
 
 export type DashboardStats = {

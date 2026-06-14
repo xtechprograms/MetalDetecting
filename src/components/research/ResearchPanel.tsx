@@ -120,7 +120,6 @@ export function ResearchPanel() {
   const [bookmarking, setBookmarking] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [oldMaps, setOldMaps] = useState<OldMapRecord[]>([]);
-  const [oldMapResources, setOldMapResources] = useState<OldMapRecord[]>([]);
   const [oldMapsLoading, setOldMapsLoading] = useState(false);
   const [oldMapsLabel, setOldMapsLabel] = useState("");
 
@@ -141,7 +140,6 @@ export function ResearchPanel() {
   ) {
     setOldMapsLoading(true);
     setOldMaps([]);
-    setOldMapResources([]);
     setOldMapsLabel(label);
 
     try {
@@ -156,7 +154,6 @@ export function ResearchPanel() {
       if (res.ok) {
         const data = await res.json();
         setOldMaps(data.maps || []);
-        setOldMapResources(data.externalResources || []);
       }
     } catch {
       // Old maps are supplementary — don't block the main search
@@ -173,7 +170,6 @@ export function ResearchPanel() {
     setNearbyResult(null);
     setSelectedSite(null);
     setOldMaps([]);
-    setOldMapResources([]);
 
     try {
       const res = await fetch(`/api/research?lat=${researchLat}&lng=${researchLng}`);
@@ -196,7 +192,6 @@ export function ResearchPanel() {
     setNearbyResult(null);
     setSelectedSite(null);
     setOldMaps([]);
-    setOldMapResources([]);
 
     try {
       const res = await fetch(`/api/research?q=${encodeURIComponent(searchQuery.trim())}`);
@@ -227,7 +222,6 @@ export function ResearchPanel() {
     setSelectedSite(null);
     setBookmarked(false);
     setOldMaps([]);
-    setOldMapResources([]);
 
     try {
       const params = new URLSearchParams({
@@ -560,7 +554,6 @@ export function ResearchPanel() {
 
           <OldMapsSection
             maps={oldMaps}
-            resources={oldMapResources}
             loading={oldMapsLoading}
             locationLabel={oldMapsLabel || nearbyResult.center.postalCode || zipCode}
           />
@@ -622,7 +615,6 @@ export function ResearchPanel() {
         <div className="space-y-4">
           <OldMapsSection
             maps={oldMaps}
-            resources={oldMapResources}
             loading={oldMapsLoading}
             locationLabel={oldMapsLabel || history.placeName}
           />
