@@ -73,7 +73,6 @@ type MapInnerProps = {
   finds: Find[];
   center: [number, number];
   zoom: number;
-  height: string;
   onLocationSelect?: (lat: number, lng: number) => void;
   selectable: boolean;
   selectedLocation: { lat: number; lng: number } | null;
@@ -83,7 +82,6 @@ export default function MapInner({
   finds,
   center,
   zoom,
-  height,
   onLocationSelect,
   selectable,
   selectedLocation,
@@ -96,7 +94,8 @@ export default function MapInner({
     <MapContainer
       center={center}
       zoom={zoom}
-      style={{ height, width: "100%" }}
+      className="h-full w-full z-0"
+      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom={true}
     >
       <TileLayer
@@ -115,7 +114,7 @@ export default function MapInner({
             icon={goldIcon}
           >
             <Popup>
-              <div className="min-w-[200px]">
+              <div className="min-w-0 max-w-[240px] sm:max-w-[280px]">
                 {find.photo_url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

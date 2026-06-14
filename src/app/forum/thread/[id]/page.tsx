@@ -46,7 +46,7 @@ export default async function ThreadPage({ params }: Props) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <Link
         href={`/forum/category/${thread.forum_categories?.slug || "general"}`}
         className="btn-ghost text-sm mb-6 inline-flex"
@@ -70,7 +70,7 @@ export default async function ThreadPage({ params }: Props) {
                 </span>
               )}
             </div>
-            <h1 className="font-display text-2xl font-bold text-slate-100">{thread.title}</h1>
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-slate-100 break-words">{thread.title}</h1>
           </div>
           {user && (
             <ThreadModeration
@@ -97,7 +97,7 @@ export default async function ThreadPage({ params }: Props) {
           />
         )}
 
-        <div className="mt-6 pt-6 border-t border-slate-700/50 text-slate-300 leading-relaxed whitespace-pre-wrap">
+        <div className="mt-6 pt-6 border-t border-slate-700/50 text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">
           {thread.content}
         </div>
       </article>
@@ -131,7 +131,7 @@ export default async function ThreadPage({ params }: Props) {
                 />
               )}
             </div>
-            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">{post.content}</p>
           </div>
         ))}
       </div>

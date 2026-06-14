@@ -105,14 +105,14 @@ export function AdminPanel({
                 </div>
               </div>
               {user.id !== currentUserId && (
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto">
                   {(["user", "mod", "admin"] as UserRole[]).map((role) => (
                     <button
                       key={role}
                       type="button"
                       onClick={() => setRole(user.id, role)}
                       disabled={loading === user.id || user.role === role}
-                      className={`btn-secondary text-xs py-1.5 capitalize ${
+                      className={`btn-secondary text-xs sm:text-sm py-2 px-3 capitalize flex-1 sm:flex-none min-h-[44px] ${
                         user.role === role ? "border-gold-500/50 text-gold-400" : ""
                       }`}
                     >

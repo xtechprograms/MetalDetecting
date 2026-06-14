@@ -44,7 +44,7 @@ export default async function CategoryPage({ params }: Props) {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <Link href="/forum" className="btn-ghost text-sm mb-6 inline-flex">
         <ArrowLeft className="w-4 h-4" />
         Back to Forum
@@ -77,7 +77,7 @@ export default async function CategoryPage({ params }: Props) {
               <div className="flex items-center gap-2 mb-1">
                 {thread.is_pinned && <Pin className="w-3.5 h-3.5 text-gold-400" />}
                 {thread.is_locked && <Lock className="w-3.5 h-3.5 text-slate-500" />}
-                <h3 className="font-semibold text-slate-100">{thread.title}</h3>
+                <h3 className="font-semibold text-slate-100 break-words">{thread.title}</h3>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
                 <span>{thread.profiles?.display_name}</span>

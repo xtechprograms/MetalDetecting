@@ -65,9 +65,9 @@ export function FriendRequests({ userId }: { userId: string }) {
         {requests.map(({ id, requester }) => (
           <div
             key={id}
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30"
+            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-xl bg-slate-800/30"
           >
-            <Link href={`/profile/${requester.username}`}>
+            <Link href={`/profile/${requester.username}`} className="shrink-0">
               {requester.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -81,7 +81,7 @@ export function FriendRequests({ userId }: { userId: string }) {
                 </div>
               )}
             </Link>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <Link
                 href={`/profile/${requester.username}`}
                 className="font-semibold hover:text-gold-400"

@@ -31,7 +31,7 @@ export default async function ForumAdminPage() {
     .order("display_name");
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <Link href="/forum" className="btn-ghost text-sm mb-6 inline-flex">
         <ArrowLeft className="w-4 h-4" />
         Back to Forum

@@ -38,7 +38,7 @@ export default async function ForumPage() {
     .limit(15);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="section-heading flex items-center gap-3 mb-2">
@@ -49,7 +49,7 @@ export default async function ForumPage() {
             Discuss finds, gear, research, and connect with hunters worldwide.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:justify-end w-full sm:w-auto">
           {currentRole === "admin" && (
             <Link href="/forum/admin" className="btn-secondary text-sm">
               <Shield className="w-4 h-4" />

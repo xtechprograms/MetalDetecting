@@ -16,6 +16,12 @@ const sans = DM_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Treasure Atlas — Global Metal Detecting Platform",
@@ -36,11 +42,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${display.variable} ${sans.variable} font-sans antialiased bg-slate-950 text-slate-100 min-h-screen flex flex-col`}
+        className={`${display.variable} ${sans.variable} font-sans antialiased bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden`}
       >
         <div className="fixed inset-0 bg-hero-gradient pointer-events-none" />
         <Navbar />
-        <main className="relative flex-1">{children}</main>
+        <main className="relative flex-1 min-w-0 overflow-x-hidden">{children}</main>
         <Footer />
       </body>
     </html>

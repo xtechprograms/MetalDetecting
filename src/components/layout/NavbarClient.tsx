@@ -56,20 +56,24 @@ export function NavbarClient({
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {user ? (
           <>
-            <Link href="/finds/new" className="btn-primary text-sm py-2 px-4 hidden sm:inline-flex">
+            <Link href="/finds/new" className="btn-primary text-sm py-2 px-3 sm:px-4 hidden sm:inline-flex">
               <PlusCircle className="w-4 h-4" />
-              Log Find
+              <span className="hidden md:inline">Log Find</span>
             </Link>
-            <Link href="/dashboard" className="btn-ghost hidden sm:inline-flex">
+            <Link href="/dashboard" className="btn-ghost hidden sm:inline-flex px-2 sm:px-4">
               <LayoutDashboard className="w-4 h-4" />
+              <span className="sr-only">Dashboard</span>
             </Link>
             <div className="relative">
               <button
+                type="button"
+                aria-label="Account menu"
+                aria-expanded={menuOpen}
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-800/50 transition-colors"
+                className="flex items-center justify-center min-h-11 min-w-11 p-1 rounded-xl hover:bg-slate-800/50 transition-colors"
               >
                 {profile?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -87,22 +91,22 @@ export function NavbarClient({
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-56 glass-card p-2 z-50 animate-fade-in">
+                  <div className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] glass-card p-2 z-50 animate-fade-in">
                     <div className="px-3 py-2 border-b border-slate-700/50 mb-2">
-                      <p className="font-semibold text-sm">{profile?.display_name}</p>
-                      <p className="text-xs text-slate-500">@{profile?.username}</p>
+                      <p className="font-semibold text-sm truncate">{profile?.display_name}</p>
+                      <p className="text-xs text-slate-500 truncate">@{profile?.username}</p>
                     </div>
                     <Link
                       href="/dashboard"
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 text-sm"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px]"
                       onClick={() => setMenuOpen(false)}
                     >
                       <LayoutDashboard className="w-4 h-4" />
                       Dashboard
                     </Link>
                     <Link
-                      href={`/profile/${profile?.username}`}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 text-sm"
+                      href="/profile/me"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px]"
                       onClick={() => setMenuOpen(false)}
                     >
                       <UserIcon className="w-4 h-4" />
@@ -110,15 +114,16 @@ export function NavbarClient({
                     </Link>
                     <Link
                       href="/finds/new"
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800/50 text-sm sm:hidden"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm sm:hidden min-h-[44px]"
                       onClick={() => setMenuOpen(false)}
                     >
                       <PlusCircle className="w-4 h-4" />
                       Log Find
                     </Link>
                     <button
+                      type="button"
                       onClick={handleSignOut}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-900/30 text-red-400 text-sm w-full"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-red-900/30 text-red-400 text-sm w-full min-h-[44px]"
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -134,15 +139,19 @@ export function NavbarClient({
               <LogIn className="w-4 h-4" />
               Sign In
             </Link>
-            <Link href="/signup" className="btn-primary text-sm py-2 px-4">
+            <Link href="/signup" className="btn-primary text-xs sm:text-sm py-2 px-3 sm:px-4">
               <UserPlus className="w-4 h-4" />
-              Join Free
+              <span className="hidden min-[380px]:inline">Join Free</span>
+              <span className="min-[380px]:hidden">Join</span>
             </Link>
           </>
         )}
 
         <button
-          className="md:hidden btn-ghost p-2"
+          type="button"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          className="md:hidden btn-ghost min-h-11 min-w-11 p-2"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -150,29 +159,64 @@ export function NavbarClient({
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800 p-4 space-y-1">
-          {mobileNavLinks.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/50"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Icon className="w-5 h-5 text-gold-500" />
-              {label}
-            </Link>
-          ))}
-          {!user && (
-            <Link
-              href="/login"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800/50"
-              onClick={() => setMobileOpen(false)}
-            >
-              <LogIn className="w-5 h-5 text-gold-500" />
-              Sign In
-            </Link>
-          )}
-        </div>
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/50 top-16"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="md:hidden fixed left-0 right-0 top-16 z-50 max-h-[calc(100dvh-4rem)] overflow-y-auto bg-slate-950/98 backdrop-blur-xl border-b border-slate-800 p-4 space-y-1 shadow-xl">
+            {mobileNavLinks.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                onClick={() => setMobileOpen(false)}
+              >
+                <Icon className="w-5 h-5 text-gold-500 shrink-0" />
+                {label}
+              </Link>
+            ))}
+            {user && (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <LayoutDashboard className="w-5 h-5 text-gold-500 shrink-0" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile/me"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <UserIcon className="w-5 h-5 text-gold-500 shrink-0" />
+                  My Profile
+                </Link>
+                <Link
+                  href="/finds/new"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <PlusCircle className="w-5 h-5 text-gold-500 shrink-0" />
+                  Log Find
+                </Link>
+              </>
+            )}
+            {!user && (
+              <Link
+                href="/login"
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                onClick={() => setMobileOpen(false)}
+              >
+                <LogIn className="w-5 h-5 text-gold-500 shrink-0" />
+                Sign In
+              </Link>
+            )}
+          </div>
+        </>
       )}
     </>
   );

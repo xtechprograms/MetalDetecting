@@ -35,8 +35,8 @@ export function CommunitySearch({ currentUserId }: { currentUserId: string }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSearch} className="flex gap-3">
-        <div className="relative flex-1">
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
           <input
             className="input-field pl-11"
@@ -45,7 +45,7 @@ export function CommunitySearch({ currentUserId }: { currentUserId: string }) {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <button type="submit" className="btn-primary" disabled={loading}>
+        <button type="submit" className="btn-primary w-full sm:w-auto shrink-0" disabled={loading}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
         </button>
       </form>
@@ -90,7 +90,7 @@ function ProfileCard({
   }, [currentUserId, profile.id, supabase]);
 
   return (
-    <div className="glass-card p-5 flex items-center gap-4">
+    <div className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <Link href={`/profile/${profile.username}`}>
         {profile.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element

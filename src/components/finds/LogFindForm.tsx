@@ -288,15 +288,15 @@ export function LogFindForm() {
 
       {/* GPS Location */}
       <div className="glass-card p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="font-display text-xl font-semibold gold-gradient-text flex items-center gap-2">
-            <MapPin className="w-5 h-5" />
+            <MapPin className="w-5 h-5 shrink-0" />
             GPS Location
           </h2>
           <button
             type="button"
             onClick={getCurrentLocation}
-            className="btn-secondary text-sm py-2"
+            className="btn-secondary text-sm py-2 w-full sm:w-auto shrink-0"
             disabled={gettingLocation}
           >
             {gettingLocation ? (
@@ -354,7 +354,7 @@ export function LogFindForm() {
               : [51.5074, -0.1278]
           }
           zoom={latitude != null ? 14 : 2}
-          height="350px"
+          size="sm"
           selectable
           onLocationSelect={handleMapClick}
           selectedLocation={

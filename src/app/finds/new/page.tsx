@@ -15,7 +15,7 @@ export default async function NewFindPage() {
   if (!user) redirect("/login?redirect=/finds/new");
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="mb-8">
         <h1 className="section-heading mb-2">Log a Find</h1>
         <p className="text-slate-400">

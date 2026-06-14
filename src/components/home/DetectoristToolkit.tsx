@@ -62,7 +62,7 @@ const toolkitItems = [
 
 export function DetectoristToolkit() {
   return (
-    <section className="py-16">
+    <section className="py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="section-heading mb-4">Detectorist Toolkit</h2>
@@ -75,7 +75,7 @@ export function DetectoristToolkit() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {toolkitItems.map(({ icon: Icon, title, description, href }) => {
             const content = (
-              <div className="glass-card p-6 h-full hover:border-gold-500/30 transition-all group">
+              <div className="glass-card p-5 sm:p-6 h-full hover:border-gold-500/30 transition-all group">
                 <Icon className="w-6 h-6 text-gold-400 mb-4 group-hover:scale-110 transition-transform" />
                 <h3 className="font-display font-semibold text-slate-100 mb-2">
                   {title}

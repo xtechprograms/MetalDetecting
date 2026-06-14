@@ -74,9 +74,9 @@ export default async function ProfilePage({ params }: Props) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Profile Header */}
-      <div className="glass-card p-8 mb-8">
+      <div className="glass-card p-5 sm:p-8 mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row items-start gap-6">
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element

@@ -61,7 +61,7 @@ export function ThreadModeration({
           <button
             type="button"
             onClick={() => updateThread({ is_pinned: !isPinned })}
-            className="btn-secondary text-xs py-1.5"
+            className="btn-secondary text-sm py-2 px-3 min-h-[44px]"
             disabled={!!loading}
           >
             {loading === "is_pinned" ? (
@@ -74,7 +74,7 @@ export function ThreadModeration({
           <button
             type="button"
             onClick={() => updateThread({ is_locked: !isLocked })}
-            className="btn-secondary text-xs py-1.5"
+            className="btn-secondary text-sm py-2 px-3 min-h-[44px]"
             disabled={!!loading}
           >
             {loading === "is_locked" ? (
@@ -136,7 +136,7 @@ export function PostModeration({
     <button
       type="button"
       onClick={handleDelete}
-      className="btn-ghost text-xs text-red-400 py-1"
+      className="btn-ghost text-sm text-red-400 py-2 min-h-[44px]"
       disabled={loading}
     >
       {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}

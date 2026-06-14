@@ -9,6 +9,20 @@
     @apply border-slate-800;
   }
 
+  html {
+    @apply overflow-x-hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply overflow-x-hidden min-w-0;
+  }
+
+  img,
+  video {
+    @apply max-w-full h-auto;
+  }
+
   ::selection {
     @apply bg-gold-500/30 text-gold-100;
   }
@@ -47,7 +61,7 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold
+    @apply inline-flex items-center justify-center gap-2 px-4 py-3 sm:px-6 rounded-xl font-semibold min-h-[44px]
       bg-gradient-to-r from-gold-600 to-gold-500 text-slate-950
       hover:from-gold-500 hover:to-gold-400
       transition-all duration-300 shadow-lg shadow-gold-500/20
@@ -56,14 +70,14 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold
+    @apply inline-flex items-center justify-center gap-2 px-4 py-3 sm:px-6 rounded-xl font-semibold min-h-[44px]
       bg-slate-800/80 text-slate-200 border border-slate-600/50
       hover:bg-slate-700/80 hover:border-gold-500/30
       transition-all duration-300;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2 sm:px-4 rounded-lg font-medium min-h-[44px]
       text-slate-400 hover:text-gold-400 hover:bg-slate-800/50 transition-all duration-200;
   }
 
@@ -79,7 +93,15 @@
   }
 
   .section-heading {
-    @apply font-display text-3xl md:text-4xl font-bold gold-gradient-text;
+    @apply font-display text-2xl sm:text-3xl md:text-4xl font-bold gold-gradient-text;
+  }
+
+  .prose-content {
+    @apply break-words [overflow-wrap:anywhere];
+  }
+
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12;
   }
 
   .leaflet-container {

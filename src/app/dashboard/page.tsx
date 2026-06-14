@@ -68,36 +68,36 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+    <div className="page-container">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 sm:mb-10">
         <div>
           <h1 className="section-heading mb-1">
             Welcome, {profile?.display_name || "Detectorist"}
           </h1>
           <p className="text-slate-400">Your detecting command center</p>
         </div>
-        <Link href="/finds/new" className="btn-primary">
+        <Link href="/finds/new" className="btn-primary w-full sm:w-auto justify-center">
           <PlusCircle className="w-5 h-5" />
           Log New Find
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
         {stats.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="glass-card p-6">
+          <div key={label} className="glass-card p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3">
               <Icon className={`w-5 h-5 ${color}`} />
               <TrendingUp className="w-4 h-4 text-slate-600" />
             </div>
-            <p className="font-display text-3xl font-bold text-slate-100">{value}</p>
-            <p className="text-sm text-slate-400 mt-1">{label}</p>
+            <p className="font-display text-2xl sm:text-3xl font-bold text-slate-100">{value}</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
         <Link
           href="/research"
           className="glass-card p-6 hover:border-gold-500/30 transition-all group"
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={find.id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 rounded-xl bg-slate-800/30 hover:bg-slate-800/50 transition-colors"
                 >
                   {find.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
                     )}
                   </div>
                   {find.show_on_map && (
-                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+                    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full shrink-0 self-start sm:self-center">
                       <Eye className="w-3 h-3" />
                       Public
                     </span>

@@ -7,6 +7,13 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    /* Tailwind defaults cover common devices:
+       default <640  phones (320–430px: iPhone SE–Pro Max, Galaxy)
+       sm 640px     large phones landscape, small tablets
+       md 768px     iPad Mini / tablets portrait
+       lg 1024px    iPad landscape, laptops
+       xl 1280px    desktop
+       2xl 1536px   large desktop */
     extend: {
       colors: {
         gold: {

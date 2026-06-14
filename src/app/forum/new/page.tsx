@@ -23,7 +23,7 @@ export default async function NewThreadPage({ searchParams }: Props) {
     .order("sort_order");
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <Link href="/forum" className="btn-ghost text-sm mb-6 inline-flex">
         <ArrowLeft className="w-4 h-4" />
         Back to Forum

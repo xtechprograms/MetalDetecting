@@ -29,7 +29,7 @@ export default async function MapPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="section-heading mb-2 flex items-center gap-3">
@@ -46,7 +46,7 @@ export default async function MapPage() {
         </div>
       </div>
 
-      <DetectingMap finds={finds} height="600px" zoom={2} />
+      <DetectingMap finds={finds} size="lg" zoom={2} />
 
       {finds.length === 0 && (
         <div className="glass-card p-8 mt-6 text-center">
