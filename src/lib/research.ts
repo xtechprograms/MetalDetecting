@@ -18,10 +18,22 @@ type NominatimResult = {
     town?: string;
     village?: string;
     state?: string;
+    county?: string;
+    region?: string;
   };
   name?: string;
   type?: string;
   class?: string;
+};
+
+type ReverseGeocodeContext = {
+  placeName: string;
+  city: string;
+  town: string;
+  village: string;
+  county: string;
+  state: string;
+  country: string;
 };
 
 function placeLabel(result: NominatimResult): string {
@@ -29,6 +41,46 @@ function placeLabel(result: NominatimResult): string {
     return result.display_name.split(",").slice(0, 3).join(", ");
   }
   return result.name || "Unknown location";
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeContext> {
+  const fallback: ReverseGeocodeContext = {
+    placeName: "Unknown Location",
+    city: "",
+    town: "",
+    village: "",
+    county: "",
+    state: "",
+    country: "",
+  };
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=12&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: NOMINATIM_HEADERS,
+      next: { revalidate: 86400 },
+    });
+    const geoData = await res.json();
+    const address = geoData.address || {};
+
+    return {
+      placeName: geoData.display_name
+        ? geoData.display_name.split(",").slice(0, 3).join(", ")
+        : fallback.placeName,
+      city: address.city || "",
+      town: address.town || "",
+      village: address.village || "",
+      county: address.county || "",
+      state: address.state || address.region || "",
+      country: address.country || "",
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function parseNominatimResults(data: unknown): NominatimResult[] {
+  return Array.isArray(data) ? data : [];
 }
 
 export async function geocodeZipCode(
@@ -115,6 +167,85 @@ async function fetchWikiExtracts(titles: string[]): Promise<Map<string, string>>
   return extracts;
 }
 
+async function fetchCenterAreaSite(
+  lat: number,
+  lng: number,
+  seen: Set<string>
+): Promise<NearbyHistorySite[]> {
+  const key = `center-${lat.toFixed(4)}-${lng.toFixed(4)}`;
+  if (seen.has(key)) return [];
+  seen.add(key);
+
+  const history = await fetchAreaHistory(lat, lng);
+  const title = history.placeName.split(",")[0]?.trim() || history.placeName;
+
+  return [
+    {
+      id: key,
+      title: `Area overview: ${title}`,
+      placeName: history.placeName,
+      summary: history.summary,
+      distanceKm: 0,
+      coordinates: { lat, lng },
+      source: "wikipedia",
+    },
+  ];
+}
+
+async function fetchWikipediaPlaceSites(
+  lat: number,
+  lng: number,
+  context: ReverseGeocodeContext,
+  seen: Set<string>,
+  limit: number
+): Promise<NearbyHistorySite[]> {
+  const queries = [
+    context.city,
+    context.town,
+    context.village,
+    context.county,
+    context.state,
+  ].filter((name, index, arr) => name && arr.indexOf(name) === index);
+
+  const sites: NearbyHistorySite[] = [];
+
+  for (const query of queries) {
+    if (sites.length >= limit) break;
+
+    const key = `wiki-place-${query.toLowerCase()}`;
+    if (seen.has(key)) continue;
+
+    try {
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query + " history")}&format=json&origin=*&srlimit=1`;
+      const searchRes = await fetch(searchUrl, { next: { revalidate: 86400 } });
+      const searchData = await searchRes.json();
+      const topResult = searchData.query?.search?.[0];
+      if (!topResult?.title) continue;
+
+      const extracts = await fetchWikiExtracts([topResult.title]);
+      const summary =
+        extracts.get(topResult.title) ||
+        `Historical background for ${query} and the surrounding area.`;
+
+      seen.add(key);
+      sites.push({
+        id: key,
+        title: topResult.title,
+        placeName: query,
+        summary,
+        distanceKm: 0,
+        coordinates: { lat, lng },
+        source: "wikipedia",
+        wikipediaUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(topResult.title.replace(/ /g, "_"))}`,
+      });
+    } catch {
+      // try next place name
+    }
+  }
+
+  return sites;
+}
+
 async function fetchWikipediaNearby(
   lat: number,
   lng: number,
@@ -168,10 +299,13 @@ async function fetchNominatimNearby(
   centerLat: number,
   centerLng: number,
   seen: Set<string>,
-  limit: number
+  limit: number,
+  context: ReverseGeocodeContext
 ): Promise<NearbyHistorySite[]> {
-  const radiusM = Math.round(radiusKm * 1000);
-  const queries = ["historic", "memorial", "castle", "museum", "archaeological"];
+  const locationSuffix = [context.city || context.town || context.village, context.state, context.country]
+    .filter(Boolean)
+    .join(", ");
+  const queries = ["historic site", "memorial", "museum", "castle", "archaeological site"];
 
   const sites: NearbyHistorySite[] = [];
 
@@ -179,16 +313,19 @@ async function fetchNominatimNearby(
     if (sites.length >= limit) break;
 
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&lat=${lat}&lon=${lng}&radius=${radiusM}&limit=5&addressdetails=1`;
+      const searchTerm = locationSuffix ? `${term} near ${locationSuffix}` : term;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=8&addressdetails=1`;
       const res = await fetch(url, {
         headers: NOMINATIM_HEADERS,
         next: { revalidate: 86400 },
       });
-      const data = (await res.json()) as NominatimResult[];
+      const data = parseNominatimResults(await res.json());
 
       for (const item of data) {
         const itemLat = parseFloat(item.lat);
         const itemLng = parseFloat(item.lon);
+        if (Number.isNaN(itemLat) || Number.isNaN(itemLng)) continue;
+
         const distanceKm = haversineKm(centerLat, centerLng, itemLat, itemLng);
         if (distanceKm > radiusKm) continue;
 
@@ -226,16 +363,14 @@ async function fetchSettlementHistory(
   seen: Set<string>,
   limit: number
 ): Promise<NearbyHistorySite[]> {
-  if (radiusKm <= 10) return [];
-
   try {
-    const radiusM = Math.round(radiusKm * 1000);
+    const radiusM = Math.max(Math.round(radiusKm * 1000), 5000);
     const url = `https://nominatim.openstreetmap.org/search?format=json&featuretype=city,town,village&lat=${lat}&lon=${lng}&radius=${radiusM}&limit=8&addressdetails=1`;
     const res = await fetch(url, {
       headers: NOMINATIM_HEADERS,
       next: { revalidate: 86400 },
     });
-    const data = (await res.json()) as NominatimResult[];
+    const data = parseNominatimResults(await res.json());
 
     const sites: NearbyHistorySite[] = [];
     const wikiTitles: string[] = [];
@@ -292,14 +427,18 @@ export async function fetchNearbyHistorySites(
   limit = 20
 ): Promise<NearbyHistorySite[]> {
   const seen = new Set<string>();
+  const context = await reverseGeocode(lat, lng);
 
-  const [wikiSites, nominatimSites, settlementSites] = await Promise.all([
+  const centerSite = await fetchCenterAreaSite(lat, lng, seen);
+
+  const [wikiSites, nominatimSites, settlementSites, placeSites] = await Promise.all([
     fetchWikipediaNearby(lat, lng, radiusKm, lat, lng, seen, limit),
-    fetchNominatimNearby(lat, lng, radiusKm, lat, lng, seen, limit),
+    fetchNominatimNearby(lat, lng, radiusKm, lat, lng, seen, limit, context),
     fetchSettlementHistory(lat, lng, radiusKm, lat, lng, seen, limit),
+    fetchWikipediaPlaceSites(lat, lng, context, seen, 5),
   ]);
 
-  return [...wikiSites, ...nominatimSites, ...settlementSites]
+  return [...centerSite, ...placeSites, ...wikiSites, ...nominatimSites, ...settlementSites]
     .sort((a, b) => a.distanceKm - b.distanceKm)
     .slice(0, limit);
 }
@@ -308,35 +447,12 @@ export async function fetchAreaHistory(
   lat: number,
   lng: number
 ): Promise<import("@/types/database").AreaHistory> {
-  const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;
-
-  let placeName = "Unknown Location";
-  let country = "";
-  let region = "";
-  let county = "";
-  let city = "";
-
-  try {
-    const geoRes = await fetch(nominatimUrl, {
-      headers: NOMINATIM_HEADERS,
-      next: { revalidate: 86400 },
-    });
-    const geoData = await geoRes.json();
-
-    if (geoData.display_name) {
-      placeName = geoData.display_name.split(",").slice(0, 3).join(", ");
-    }
-    country = geoData.address?.country || "";
-    region = geoData.address?.state || geoData.address?.region || "";
-    county = geoData.address?.county || "";
-    city =
-      geoData.address?.city ||
-      geoData.address?.town ||
-      geoData.address?.village ||
-      "";
-  } catch {
-    // Continue with defaults
-  }
+  const context = await reverseGeocode(lat, lng);
+  const placeName = context.placeName;
+  const country = context.country;
+  const region = context.state;
+  const county = context.county;
+  const city = context.city || context.town || context.village;
 
   const searchTerms = [city, county, region, country].filter(Boolean);
   const wikiQuery = searchTerms.slice(0, 2).join(" ") || placeName;

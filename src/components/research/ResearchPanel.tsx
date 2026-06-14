@@ -567,8 +567,8 @@ export function ResearchPanel() {
 
           {nearbyResult.sites.length === 0 ? (
             <div className="glass-card p-8 text-center text-slate-400 text-sm">
-              No historical sites found in this radius. Try a larger search area or a different zip
-              code.
+              We couldn&apos;t load detailed nearby sites right now. Try searching again, or use
+              a larger radius. Historical maps above may still be available for your zip code.
             </div>
           ) : (
             <div className="space-y-3">
