@@ -40,6 +40,7 @@ export type ForumThread = {
   is_deleted: boolean;
   reply_count: number;
   view_count: number;
+  like_count: number;
   last_reply_at: string | null;
   created_at: string;
   updated_at: string;
@@ -53,9 +54,29 @@ export type ForumPost = {
   user_id: string;
   content: string;
   is_deleted: boolean;
+  like_count: number;
   created_at: string;
   updated_at: string;
   profiles?: Pick<Profile, "username" | "display_name" | "avatar_url" | "role" | "forum_post_count" | "find_count">;
+};
+
+export type GalleryPhoto = {
+  id: string;
+  user_id: string;
+  image_url: string;
+  caption: string | null;
+  like_count: number;
+  comment_count: number;
+  created_at: string;
+};
+
+export type GalleryComment = {
+  id: string;
+  photo_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  profiles?: Pick<Profile, "username" | "display_name" | "avatar_url">;
 };
 
 export type Find = {
@@ -122,4 +143,35 @@ export type UserContributionStats = {
   forum_thread_count: number;
   forum_post_count: number;
   total_forum_activity: number;
+};
+
+export type ForumReportReason =
+  | "spam"
+  | "harassment"
+  | "off_topic"
+  | "inappropriate"
+  | "other";
+
+export type ForumReportStatus = "pending" | "reviewed" | "dismissed" | "action_taken";
+
+export type ForumReport = {
+  id: string;
+  reporter_id: string;
+  thread_id: string;
+  post_id: string | null;
+  report_type: "thread" | "post";
+  reason: ForumReportReason;
+  details: string | null;
+  status: ForumReportStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  moderator_notes: string | null;
+  created_at: string;
+  reporter?: Pick<Profile, "username" | "display_name">;
+  forum_threads?: Pick<ForumThread, "title" | "content" | "user_id"> & {
+    profiles?: Pick<Profile, "username" | "display_name">;
+  };
+  forum_posts?: Pick<ForumPost, "content" | "user_id"> & {
+    profiles?: Pick<Profile, "username" | "display_name">;
+  };
 };

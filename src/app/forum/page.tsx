@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { MessagesSquare, PlusCircle, Pin, Lock, Shield } from "lucide-react";
+import { MessagesSquare, PlusCircle, Pin, Lock, Shield, ShieldAlert } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { RoleBadge } from "@/components/forum/RoleBadge";
+import { canViewModerationQueue } from "@/lib/forum/permissions";
 import type { UserRole } from "@/types/database";
 
 export const metadata = { title: "Forum" };
@@ -21,6 +22,15 @@ export default async function ForumPage() {
       .eq("id", user.id)
       .maybeSingle();
     currentRole = (me?.role as UserRole) || "user";
+  }
+
+  let pendingReports = 0;
+  if (canViewModerationQueue(currentRole)) {
+    const { count } = await supabase
+      .from("forum_reports")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending");
+    pendingReports = count || 0;
   }
 
   const { data: categories } = await supabase
@@ -50,6 +60,17 @@ export default async function ForumPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:justify-end w-full sm:w-auto">
+          {canViewModerationQueue(currentRole) && (
+            <Link href="/forum/moderation" className="btn-secondary text-sm relative">
+              <ShieldAlert className="w-4 h-4" />
+              Moderation
+              {pendingReports > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-amber-500 text-slate-950 text-xs font-bold">
+                  {pendingReports}
+                </span>
+              )}
+            </Link>
+          )}
           {currentRole === "admin" && (
             <Link href="/forum/admin" className="btn-secondary text-sm">
               <Shield className="w-4 h-4" />

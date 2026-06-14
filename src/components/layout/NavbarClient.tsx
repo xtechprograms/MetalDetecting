@@ -16,6 +16,7 @@ import {
   Search,
   Users,
   MessagesSquare,
+  Settings,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -144,6 +145,14 @@ export function NavbarClient({
                       My Profile
                     </Link>
                     <Link
+                      href="/profile/me/edit"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px]"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Settings className="w-4 h-4" />
+                      Edit Profile & Photo
+                    </Link>
+                    <Link
                       href="/finds/new"
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm sm:hidden min-h-[44px]"
                       onClick={() => setMenuOpen(false)}
@@ -227,6 +236,14 @@ export function NavbarClient({
                 >
                   <UserIcon className="w-5 h-5 text-gold-500 shrink-0" />
                   My Profile
+                </Link>
+                <Link
+                  href="/profile/me/edit"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-slate-800/50 min-h-[48px]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Settings className="w-5 h-5 text-gold-500 shrink-0" />
+                  Edit Profile & Photo
                 </Link>
                 <Link
                   href="/finds/new"

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ForumAuthor } from "@/components/forum/ForumAuthor";
 import { ReplyForm } from "@/components/forum/ReplyForm";
 import { ThreadModeration, PostModeration } from "@/components/forum/ModerationActions";
+import { ReportButton } from "@/components/forum/ReportButton";
+import { ForumLikeButton } from "@/components/forum/ForumLikeButton";
 import { ArrowLeft, Pin, Lock } from "lucide-react";
 import type { UserRole } from "@/types/database";
 
@@ -41,6 +43,29 @@ export default async function ThreadPage({ params }: Props) {
     .eq("is_deleted", false)
     .order("created_at", { ascending: true });
 
+  let threadLiked = false;
+  const postLikeMap = new Map<string, boolean>();
+
+  if (user) {
+    const { data: threadLike } = await supabase
+      .from("forum_thread_likes")
+      .select("id")
+      .eq("thread_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    threadLiked = !!threadLike;
+
+    const postIds = posts?.map((p) => p.id) || [];
+    if (postIds.length > 0) {
+      const { data: postLikes } = await supabase
+        .from("forum_post_likes")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postIds);
+      postLikes?.forEach((l) => postLikeMap.set(l.post_id, true));
+    }
+  }
+
   if (!user) {
     // allow read
   }
@@ -73,14 +98,22 @@ export default async function ThreadPage({ params }: Props) {
             <h1 className="font-display text-xl sm:text-2xl font-bold text-slate-100 break-words">{thread.title}</h1>
           </div>
           {user && (
-            <ThreadModeration
-              threadId={thread.id}
-              isPinned={thread.is_pinned}
-              isLocked={thread.is_locked}
-              ownerId={thread.user_id}
-              currentUserId={user.id}
-              currentRole={currentRole}
-            />
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <ReportButton
+                threadId={thread.id}
+                reportType="thread"
+                contentOwnerId={thread.user_id}
+                currentUserId={user.id}
+              />
+              <ThreadModeration
+                threadId={thread.id}
+                isPinned={thread.is_pinned}
+                isLocked={thread.is_locked}
+                ownerId={thread.user_id}
+                currentUserId={user.id}
+                currentRole={currentRole}
+              />
+            </div>
           )}
         </div>
 
@@ -99,6 +132,17 @@ export default async function ThreadPage({ params }: Props) {
 
         <div className="mt-6 pt-6 border-t border-slate-700/50 text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">
           {thread.content}
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-700/30">
+          <ForumLikeButton
+            targetType="thread"
+            targetId={thread.id}
+            ownerId={thread.user_id}
+            currentUserId={user?.id ?? null}
+            initialLikeCount={thread.like_count ?? 0}
+            initialLiked={threadLiked}
+          />
         </div>
       </article>
 
@@ -124,14 +168,33 @@ export default async function ThreadPage({ params }: Props) {
                 />
               )}
               {user && (
-                <PostModeration
-                  postId={post.id}
-                  currentRole={currentRole}
-                  isOwner={post.user_id === user.id}
-                />
+                <div className="flex flex-wrap items-start gap-1 shrink-0">
+                  <ReportButton
+                    threadId={thread.id}
+                    postId={post.id}
+                    reportType="post"
+                    contentOwnerId={post.user_id}
+                    currentUserId={user.id}
+                  />
+                  <PostModeration
+                    postId={post.id}
+                    currentRole={currentRole}
+                    isOwner={post.user_id === user.id}
+                  />
+                </div>
               )}
             </div>
             <p className="text-slate-300 leading-relaxed whitespace-pre-wrap prose-content">{post.content}</p>
+            <div className="mt-3 pt-3 border-t border-slate-700/30">
+              <ForumLikeButton
+                targetType="post"
+                targetId={post.id}
+                ownerId={post.user_id}
+                currentUserId={user?.id ?? null}
+                initialLikeCount={post.like_count ?? 0}
+                initialLiked={postLikeMap.get(post.id) ?? false}
+              />
+            </div>
           </div>
         ))}
       </div>

@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AddFriendButton } from "@/components/community/FriendActions";
+import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { RoleBadge } from "@/components/forum/RoleBadge";
 import { UserStatsBar } from "@/components/forum/UserStatsBar";
-import type { UserRole } from "@/types/database";
+import type { GalleryComment, UserRole } from "@/types/database";
 import {
   MapPin,
   Compass,
@@ -72,6 +73,40 @@ export default async function ProfilePage({ params }: Props) {
       .maybeSingle();
     friendshipStatus = friendship?.status || null;
   }
+
+  const { data: galleryPhotos } = await supabase
+    .from("profile_gallery_photos")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  const photoIds = galleryPhotos?.map((p) => p.id) || [];
+
+  let galleryComments: GalleryComment[] = [];
+
+  if (photoIds.length > 0) {
+    const { data } = await supabase
+      .from("gallery_comments")
+      .select("*, profiles(username, display_name, avatar_url)")
+      .in("photo_id", photoIds)
+      .order("created_at", { ascending: true });
+    galleryComments = (data as GalleryComment[]) || [];
+  }
+
+  let likedPhotoIds = new Set<string>();
+  if (user && photoIds.length > 0) {
+    const { data: myLikes } = await supabase
+      .from("gallery_likes")
+      .select("photo_id")
+      .eq("user_id", user.id)
+      .in("photo_id", photoIds);
+    likedPhotoIds = new Set(myLikes?.map((l) => l.photo_id) || []);
+  }
+
+  const photosWithMeta = (galleryPhotos || []).map((photo) => ({
+    ...photo,
+    likedByMe: likedPhotoIds.has(photo.id),
+  }));
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -163,6 +198,13 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      <ProfileGallery
+        isOwner={isOwnProfile}
+        currentUserId={user?.id ?? null}
+        initialPhotos={photosWithMeta}
+        initialComments={galleryComments}
+      />
 
       {/* Finds Gallery */}
       <div className="glass-card p-6">
