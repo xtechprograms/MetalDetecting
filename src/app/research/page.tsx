@@ -10,8 +10,9 @@ export default function ResearchPage() {
       <div className="mb-8">
         <h1 className="section-heading mb-2">Area Research</h1>
         <p className="text-slate-400 max-w-2xl">
-          Research the history of any location worldwide before you detect.
-          Get historical context, detecting tips, and legal guidance.
+          Research the history of any location worldwide before you detect. Search by place name,
+          zip/postal code, or GPS — find the closest historical sites near you in miles or
+          kilometers.
         </p>
       </div>
       <ResearchPanel />

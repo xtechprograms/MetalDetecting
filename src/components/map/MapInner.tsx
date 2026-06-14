@@ -6,6 +6,7 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Circle,
   useMapEvents,
   useMap,
 } from "react-leaflet";
@@ -42,6 +43,20 @@ const selectedIcon = new L.DivIcon({
   iconAnchor: [12, 12],
 });
 
+const historyIcon = new L.DivIcon({
+  className: "custom-marker-history",
+  html: `<div style="
+    width: 20px; height: 20px;
+    background: #d4a017;
+    border: 2px solid #fef3c7;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(212,160,23,0.5);
+  "></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, -10],
+});
+
 function MapClickHandler({
   onLocationSelect,
 }: {
@@ -69,6 +84,14 @@ function MapController({
   return null;
 }
 
+type HistoryMarker = {
+  id: string;
+  lat: number;
+  lng: number;
+  title: string;
+  label?: string;
+};
+
 type MapInnerProps = {
   finds: Find[];
   center: [number, number];
@@ -76,6 +99,8 @@ type MapInnerProps = {
   onLocationSelect?: (lat: number, lng: number) => void;
   selectable: boolean;
   selectedLocation: { lat: number; lng: number } | null;
+  radiusKm?: number | null;
+  historyMarkers?: HistoryMarker[];
 };
 
 export default function MapInner({
@@ -85,6 +110,8 @@ export default function MapInner({
   onLocationSelect,
   selectable,
   selectedLocation,
+  radiusKm = null,
+  historyMarkers = [],
 }: MapInnerProps) {
   const mapFinds = finds.filter(
     (f) => f.show_on_map && f.latitude != null && f.longitude != null
@@ -104,6 +131,31 @@ export default function MapInner({
       />
       <MapController center={center} zoom={zoom} />
       {selectable && <MapClickHandler onLocationSelect={onLocationSelect} />}
+
+      {radiusKm != null && radiusKm > 0 && (
+        <Circle
+          center={center}
+          radius={radiusKm * 1000}
+          pathOptions={{
+            color: "#d4a017",
+            fillColor: "#d4a017",
+            fillOpacity: 0.08,
+            weight: 2,
+            dashArray: "6 8",
+          }}
+        />
+      )}
+
+      {historyMarkers.map((marker) => (
+        <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={historyIcon}>
+          <Popup>
+            <div className="min-w-0 max-w-[220px]">
+              <p className="font-semibold text-gold-400 text-sm">{marker.title}</p>
+              {marker.label && <p className="text-xs text-slate-500 mt-1">{marker.label}</p>}
+            </div>
+          </Popup>
+        </Marker>
+      ))}
 
       {mapFinds.map((find) => {
         const category = FIND_CATEGORIES.find((c) => c.value === find.category);

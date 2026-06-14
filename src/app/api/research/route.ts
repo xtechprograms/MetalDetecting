@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchAreaHistory } from "@/lib/research";
+import { fetchAreaHistory, geocodeQuery } from "@/lib/research";
 
 export async function GET(request: NextRequest) {
   const lat = request.nextUrl.searchParams.get("lat");
   const lng = request.nextUrl.searchParams.get("lng");
+  const query = request.nextUrl.searchParams.get("q");
+
+  if (query && !lat && !lng) {
+    try {
+      const location = await geocodeQuery(query);
+      if (!location) {
+        return NextResponse.json({ error: "Location not found" }, { status: 404 });
+      }
+      const history = await fetchAreaHistory(location.lat, location.lng);
+      return NextResponse.json(history);
+    } catch {
+      return NextResponse.json({ error: "Failed to fetch area history" }, { status: 500 });
+    }
+  }
 
   if (!lat || !lng) {
     return NextResponse.json(

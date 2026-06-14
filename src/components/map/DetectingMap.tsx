@@ -30,6 +30,8 @@ type MapProps = {
   onLocationSelect?: (lat: number, lng: number) => void;
   selectable?: boolean;
   selectedLocation?: { lat: number; lng: number } | null;
+  radiusKm?: number | null;
+  historyMarkers?: { id: string; lat: number; lng: number; title: string; label?: string }[];
 };
 
 export function DetectingMap({
@@ -40,6 +42,8 @@ export function DetectingMap({
   onLocationSelect,
   selectable = false,
   selectedLocation = null,
+  radiusKm = null,
+  historyMarkers = [],
 }: MapProps) {
   const [mounted, setMounted] = useState(false);
   const heightClass = MAP_SIZE_CLASSES[size];
@@ -69,6 +73,8 @@ export function DetectingMap({
         onLocationSelect={onLocationSelect}
         selectable={selectable}
         selectedLocation={selectedLocation}
+        radiusKm={radiusKm}
+        historyMarkers={historyMarkers}
       />
     </div>
   );

@@ -138,6 +138,32 @@ export type AreaHistory = {
   coordinates: { lat: number; lng: number };
 };
 
+export type GeocodedLocation = {
+  lat: number;
+  lng: number;
+  placeName: string;
+  country: string;
+  postalCode?: string;
+};
+
+export type NearbyHistorySite = {
+  id: string;
+  title: string;
+  placeName: string;
+  summary: string;
+  distanceKm: number;
+  coordinates: { lat: number; lng: number };
+  source: "wikipedia" | "nominatim";
+  wikipediaUrl?: string;
+};
+
+export type NearbyHistoryResult = {
+  center: GeocodedLocation;
+  radiusKm: number;
+  unitSystem: "metric" | "imperial";
+  sites: NearbyHistorySite[];
+};
+
 export type DashboardStats = {
   totalFinds: number;
   mapFinds: number;
