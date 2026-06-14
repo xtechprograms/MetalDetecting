@@ -1,0 +1,11 @@
+# Next.js on Netlify: do NOT set a Publish directory in the Netlify UI.
+# Leave it blank — @netlify/plugin-nextjs handles deployment output.
+
+[build]
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"
