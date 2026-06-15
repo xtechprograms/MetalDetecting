@@ -18,6 +18,7 @@ import {
   MessagesSquare,
   Shield,
   ShieldAlert,
+  Bell,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -25,6 +26,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { getInitials } from "@/lib/utils";
 import { isAdmin, showModerationPanel } from "@/lib/forum/permissions";
 import type { UserRole } from "@/types/database";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const mobileNavLinks = [
   { href: "/forum", label: "Forum", icon: MessagesSquare },
@@ -104,6 +106,7 @@ export function NavbarClient({
               <LayoutDashboard className="w-4 h-4" />
               <span className="sr-only">Dashboard</span>
             </Link>
+            <NotificationBell userId={user.id} />
             <div className="relative" ref={accountMenuRef}>
               <button
                 type="button"
@@ -135,6 +138,14 @@ export function NavbarClient({
                       <p className="font-semibold text-sm truncate">{profile?.display_name}</p>
                       <p className="text-xs text-slate-500 truncate">@{profile?.username}</p>
                     </div>
+                    <Link
+                      href="/notifications"
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px]"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <Bell className="w-4 h-4" />
+                      Notifications
+                    </Link>
                     <Link
                       href="/dashboard"
                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-slate-800/50 text-sm min-h-[44px]"
@@ -240,6 +251,14 @@ export function NavbarClient({
             ))}
             {user && (
               <>
+                <Link
+                  href="/notifications"
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Bell className="w-5 h-5 text-gold-500 shrink-0" />
+                  Notifications
+                </Link>
                 <Link
                   href="/dashboard"
                   className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-slate-100 hover:bg-slate-800 min-h-[48px]"

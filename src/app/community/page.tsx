@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CommunitySearch } from "@/components/community/CommunitySearch";
 import { FriendRequests } from "@/components/community/FriendRequests";
+import { FriendsList } from "@/components/community/FriendsList";
 import { Users } from "lucide-react";
 
 export const metadata = {
@@ -29,6 +30,8 @@ export default async function CommunityPage() {
       </div>
 
       <FriendRequests userId={user.id} />
+
+      <FriendsList userId={user.id} />
 
       <div className="mt-10">
         <h2 className="font-display text-xl font-semibold mb-4">Find Detectorists</h2>

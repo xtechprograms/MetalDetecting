@@ -34,7 +34,7 @@ export function LogFindForm() {
   const [signalId, setSignalId] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [showOnMap, setShowOnMap] = useState(false);
+  const [showOnMap, setShowOnMap] = useState(true);
   const [postAnonymously, setPostAnonymously] = useState(true);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -368,7 +368,50 @@ export function LogFindForm() {
           }
         />
 
-        {/* Privacy — anonymous by default */}
+        {/* Show on map — default on, independent of anonymity */}
+        <div
+          className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+            showOnMap
+              ? "bg-gold-500/10 border-gold-500/30"
+              : "bg-slate-800/30 border-slate-700/50"
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0 pr-3">
+            {showOnMap ? (
+              <Eye className="w-5 h-5 shrink-0 text-gold-400" />
+            ) : (
+              <EyeOff className="w-5 h-5 shrink-0 text-slate-500" />
+            )}
+            <div>
+              <p className="font-medium text-sm">Show on Global Map</p>
+              <p className="text-xs text-slate-500">
+                {latitude == null || longitude == null
+                  ? "Add coordinates to share this find on the community map"
+                  : showOnMap
+                    ? "This find's location will appear on the global map"
+                    : "Keep this find off the global map (private in your log only)"}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showOnMap}
+            onClick={() => setShowOnMap(!showOnMap)}
+            disabled={latitude == null || longitude == null}
+            className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
+              showOnMap ? "bg-gold-500" : "bg-slate-700"
+            } ${latitude == null || longitude == null ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <span
+              className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                showOnMap ? "left-6" : "left-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Privacy — anonymous by default, separate from map visibility */}
         <div className="space-y-3">
           <div
             className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
@@ -384,7 +427,8 @@ export function LogFindForm() {
               <div>
                 <p className="font-medium text-sm">Post anonymously (recommended)</p>
                 <p className="text-xs text-slate-500">
-                  Other users cannot link this find or location to your profile
+                  Other users cannot link this find to your profile. Anonymous finds
+                  only appear on your profile — not on anyone else&apos;s view of it.
                 </p>
               </div>
             </div>
@@ -415,47 +459,6 @@ export function LogFindForm() {
               </p>
             </div>
           )}
-        </div>
-
-        {/* Show on map toggle */}
-        <div
-          className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
-            showOnMap
-              ? "bg-gold-500/10 border-gold-500/30"
-              : "bg-slate-800/30 border-slate-700/50"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {showOnMap ? (
-              <Eye className="w-5 h-5 text-gold-400" />
-            ) : (
-              <EyeOff className="w-5 h-5 text-slate-500" />
-            )}
-            <div>
-              <p className="font-medium text-sm">Show on Global Map</p>
-              <p className="text-xs text-slate-500">
-                {postAnonymously
-                  ? "Share the find location without revealing who posted it"
-                  : "Share this find's location and your profile with the community"}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showOnMap}
-            onClick={() => setShowOnMap(!showOnMap)}
-            disabled={latitude == null || longitude == null}
-            className={`relative w-12 h-7 rounded-full transition-colors ${
-              showOnMap ? "bg-gold-500" : "bg-slate-700"
-            } ${latitude == null ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            <span
-              className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-                showOnMap ? "left-6" : "left-1"
-              }`}
-            />
-          </button>
         </div>
       </div>
 

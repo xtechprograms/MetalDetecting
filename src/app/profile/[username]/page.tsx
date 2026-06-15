@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AddFriendButton } from "@/components/community/FriendActions";
+import { FriendNotificationToggle } from "@/components/community/FriendNotificationToggle";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { RoleBadge } from "@/components/forum/RoleBadge";
 import { UserStatsBar } from "@/components/forum/UserStatsBar";
@@ -60,7 +61,7 @@ export default async function ProfilePage({ params }: Props) {
 
   const visibleFinds =
     finds?.filter((find) =>
-      isOwnProfile ? true : find.show_on_map && find.is_anonymous === false
+      isOwnProfile ? true : find.is_anonymous === false
     ) ?? [];
 
   const { count: findCount } = await supabase
@@ -150,11 +151,20 @@ export default async function ProfilePage({ params }: Props) {
                   Edit Profile
                 </Link>
               ) : user ? (
-                <AddFriendButton
-                  targetUserId={profile.id}
-                  currentUserId={user.id}
-                  existingStatus={friendshipStatus}
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <AddFriendButton
+                    targetUserId={profile.id}
+                    currentUserId={user.id}
+                    existingStatus={friendshipStatus}
+                  />
+                  {friendshipStatus === "accepted" && (
+                    <FriendNotificationToggle
+                      currentUserId={user.id}
+                      friendUserId={profile.id}
+                      friendName={profile.display_name}
+                    />
+                  )}
+                </div>
               ) : null}
             </div>
 
@@ -288,7 +298,7 @@ export default async function ProfilePage({ params }: Props) {
         ) : (
           <div className="text-center py-12 text-slate-400">
             <Compass className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            No finds logged yet
+            {isOwnProfile ? "No finds logged yet" : "No public finds to show"}
           </div>
         )}
       </div>

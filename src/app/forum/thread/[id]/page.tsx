@@ -159,7 +159,7 @@ export default async function ThreadPage({ params }: Props) {
 
       <div className="space-y-4 mb-8">
         {posts?.map((post) => (
-          <div key={post.id} className="glass-card p-5">
+          <div key={post.id} id={`post-${post.id}`} className="glass-card p-5 scroll-mt-24">
             <div className="flex justify-between items-start gap-4 mb-4">
               {post.profiles && (
                 <ForumAuthor

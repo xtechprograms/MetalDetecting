@@ -116,6 +116,40 @@ export type Friendship = {
   addressee?: Profile;
 };
 
+export type NotificationType =
+  | "friend_request"
+  | "friend_accepted"
+  | "forum_thread_reply"
+  | "forum_post_reply"
+  | "forum_thread_like"
+  | "forum_post_like"
+  | "friend_forum_thread"
+  | "friend_forum_post"
+  | "friend_find";
+
+export type FriendNotificationMute = {
+  id: string;
+  user_id: string;
+  muted_user_id: string;
+  created_at: string;
+};
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  friendship_id: string | null;
+  thread_id: string | null;
+  post_id: string | null;
+  find_id: string | null;
+  title: string;
+  body: string | null;
+  read_at: string | null;
+  created_at: string;
+  actor?: Pick<Profile, "username" | "display_name" | "avatar_url">;
+};
+
 export type ResearchBookmark = {
   id: string;
   user_id: string;
