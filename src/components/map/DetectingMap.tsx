@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import type { Find } from "@/types/database";
 import { Loader2 } from "lucide-react";
 import { MapLegend } from "./MapLegend";
-import { resolveLegendKeys, type MapLegendKey } from "./mapMarkers";
+import { resolveLegendKeys, type MapLegendKey } from "./legendConfig";
 const MapInner = dynamic(() => import("./MapInner"), {
   ssr: false,
   loading: () => (

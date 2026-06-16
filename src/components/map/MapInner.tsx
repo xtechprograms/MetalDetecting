@@ -12,7 +12,7 @@ import {
 } from "react-leaflet";
 import type { Find } from "@/types/database";
 import { FIND_CATEGORIES, formatCoordinates, formatDate } from "@/lib/utils";
-import { findPinIcon, historyIcon, selectedIcon } from "./mapMarkers";
+import { findPinIcon, historyIcon, selectedIcon } from "./leafletIcons";
 import Link from "next/link";
 function MapClickHandler({
   onLocationSelect,

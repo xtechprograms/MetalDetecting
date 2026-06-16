@@ -1,4 +1,7 @@
-import { LegendSwatch, MAP_LEGEND_LABELS, type MapLegendKey } from "./mapMarkers";
+"use client";
+
+import { LegendSwatch } from "./LegendSwatch";
+import { MAP_LEGEND_LABELS, type MapLegendKey } from "./legendConfig";
 
 type MapLegendProps = {
   items: MapLegendKey[];
