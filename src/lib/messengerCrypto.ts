@@ -47,15 +47,25 @@ type KeyBackupEnvelope = {
   ct: string;
 };
 
+export type ReplyPreview = {
+  text: string;
+  hasImage?: boolean;
+  senderId: string;
+};
+
 export type DecryptedMessagePayload = {
   text: string;
   imagePath?: string;
   imageIv?: string;
+  replyToId?: string;
+  replyPreview?: ReplyPreview;
 };
 
 export type UiDirectMessage = DirectMessage & {
   decryptedText: string;
   decryptedImageUrl?: string;
+  replyToId?: string;
+  replyPreview?: ReplyPreview;
 };
 
 type EncryptedEnvelope = {
@@ -85,6 +95,70 @@ function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+export function buildReplyPreview(message: UiDirectMessage): ReplyPreview {
+  let text = message.decryptedText?.trim() || "";
+  if (!text && message.decryptedImageUrl) {
+    text = "Photo";
+  }
+  if (!text) {
+    text = "Message";
+  }
+
+  return {
+    text: text.length > 120 ? `${text.slice(0, 120)}…` : text,
+    hasImage: !!message.decryptedImageUrl && !message.decryptedText?.trim(),
+    senderId: message.sender_id,
+  };
+}
+
+function parsePlaintextPayload(content: string): Omit<DecryptedMessagePayload, "imagePath" | "imageIv"> {
+  if (content.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(content) as {
+        ta?: number;
+        text?: string;
+        replyToId?: string;
+        replyPreview?: ReplyPreview;
+      };
+      if (parsed.ta === 1 && typeof parsed.text === "string") {
+        return {
+          text: parsed.text,
+          replyToId: parsed.replyToId,
+          replyPreview: parsed.replyPreview,
+        };
+      }
+    } catch {
+      // plain text fallback
+    }
+  }
+
+  return { text: content };
+}
+
+export function encodePlaintextPayload(payload: DecryptedMessagePayload): string {
+  if (payload.replyToId && payload.replyPreview) {
+    return JSON.stringify({
+      ta: 1,
+      text: payload.text,
+      replyToId: payload.replyToId,
+      replyPreview: payload.replyPreview,
+    });
+  }
+
+  return payload.text;
+}
+
+export function previewFromPlaintextContent(
+  content: string,
+  imageUrl?: string | null
+): string {
+  if (imageUrl) return "📷 Photo";
+  const parsed = parsePlaintextPayload(content);
+  const prefix = parsed.replyPreview ? "↩ " : "";
+  if (parsed.text.trim()) return `${prefix}${parsed.text}`;
+  return `${prefix}Message`;
 }
 
 function parsePublicKeyJwk(raw: string | null | undefined): JsonWebKey | null {
@@ -634,10 +708,13 @@ export async function decryptDirectMessage(
   options?: { keysRegenerated?: boolean }
 ): Promise<UiDirectMessage> {
   if (!message.is_encrypted) {
+    const parsed = parsePlaintextPayload(message.content);
     return {
       ...message,
-      decryptedText: message.content,
+      decryptedText: parsed.text,
       decryptedImageUrl: message.image_url || undefined,
+      replyToId: parsed.replyToId ?? message.reply_to_id ?? undefined,
+      replyPreview: parsed.replyPreview,
     };
   }
 
@@ -670,6 +747,8 @@ export async function decryptDirectMessage(
     ...message,
     decryptedText: payload.text || (payload.imagePath ? "" : "🔒 Encrypted message"),
     decryptedImageUrl,
+    replyToId: payload.replyToId ?? message.reply_to_id ?? undefined,
+    replyPreview: payload.replyPreview,
   };
 }
 
@@ -682,7 +761,8 @@ export function previewFromPayload(
   keysRegenerated?: boolean
 ): string {
   if (!payload) return keysRegenerated ? LOST_KEYS_MESSAGE : "🔒 Encrypted message";
-  if (payload.text.trim()) return payload.text;
-  if (payload.imagePath) return "📷 Photo";
-  return "🔒 Encrypted message";
+  const prefix = payload.replyPreview ? "↩ " : "";
+  if (payload.text.trim()) return `${prefix}${payload.text}`;
+  if (payload.imagePath || payload.replyPreview?.hasImage) return `${prefix}📷 Photo`;
+  return keysRegenerated ? LOST_KEYS_MESSAGE : "🔒 Encrypted message";
 }

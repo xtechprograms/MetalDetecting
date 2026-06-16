@@ -1,3 +1,9 @@
+import type {
+  DecryptedMessagePayload,
+  ReplyPreview,
+  UiDirectMessage,
+} from "./messengerCrypto";
+
 export function playMessageSound() {
   if (typeof window === "undefined") return;
 
@@ -89,4 +95,70 @@ export const MESSENGER_FRIENDS_CHANGED = "ta-messenger-friends-changed";
 export function notifyMessengerFriendsChanged() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent(MESSENGER_FRIENDS_CHANGED));
+}
+
+export function buildReplyPreview(message: UiDirectMessage): ReplyPreview {
+  let text = message.decryptedText?.trim() || "";
+  if (!text && message.decryptedImageUrl) {
+    text = "Photo";
+  }
+  if (!text) {
+    text = "Message";
+  }
+
+  return {
+    text: text.length > 120 ? `${text.slice(0, 120)}…` : text,
+    hasImage: !!message.decryptedImageUrl && !message.decryptedText?.trim(),
+    senderId: message.sender_id,
+  };
+}
+
+function parsePlaintextPayload(
+  content: string
+): Omit<DecryptedMessagePayload, "imagePath" | "imageIv"> {
+  if (content.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(content) as {
+        ta?: number;
+        text?: string;
+        replyToId?: string;
+        replyPreview?: ReplyPreview;
+      };
+      if (parsed.ta === 1 && typeof parsed.text === "string") {
+        return {
+          text: parsed.text,
+          replyToId: parsed.replyToId,
+          replyPreview: parsed.replyPreview,
+        };
+      }
+    } catch {
+      // plain text fallback
+    }
+  }
+
+  return { text: content };
+}
+
+export function encodePlaintextPayload(payload: DecryptedMessagePayload): string {
+  if (payload.replyToId && payload.replyPreview) {
+    return JSON.stringify({
+      ta: 1,
+      text: payload.text,
+      replyToId: payload.replyToId,
+      replyPreview: payload.replyPreview,
+    });
+  }
+
+  return payload.text;
+}
+
+export function previewFromPlaintextContent(
+  content: string,
+  imageUrl?: string | null
+): string {
+  if (imageUrl) return "📷 Photo";
+  const parsed = parsePlaintextPayload(content);
+  const prefix = parsed.replyPreview ? "↩ " : "";
+  if (parsed.text.trim()) return `${prefix}${parsed.text}`;
+  return `${prefix}Message`;
 }

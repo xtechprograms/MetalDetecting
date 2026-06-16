@@ -170,6 +170,7 @@ export type DirectMessage = {
   content: string;
   image_url: string | null;
   is_encrypted: boolean;
+  reply_to_id: string | null;
   created_at: string;
   sender?: Pick<Profile, "username" | "display_name" | "avatar_url">;
 };

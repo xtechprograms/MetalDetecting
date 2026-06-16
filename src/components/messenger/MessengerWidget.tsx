@@ -11,13 +11,14 @@ import {
   presenceColor,
   presenceLabel,
   QUICK_EMOJIS,
+  buildReplyPreview,
+  encodePlaintextPayload,
+  previewFromPlaintextContent,
 } from "@/lib/messenger";
 import {
-  buildReplyPreview,
   decryptDirectMessage,
   decryptPayload,
   deriveConversationKey,
-  encodePlaintextPayload,
   ensureUserEncryptionKeys,
   prepareMessagingKeys,
   restoreMessagingKeysFromPin,
@@ -29,7 +30,6 @@ import {
   isEncryptedContent,
   parsePublicKeyJwkFromProfile,
   previewFromPayload,
-  previewFromPlaintextContent,
   type UiDirectMessage,
   type MessagingPinLength,
 } from "@/lib/messengerCrypto";
