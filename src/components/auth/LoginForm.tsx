@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { syncMessagingKeysFromPassword } from "@/lib/messengerCrypto";
 import { Compass, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
@@ -19,7 +20,7 @@ export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }
     setLoading(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -28,6 +29,14 @@ export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }
       setError(signInError.message);
       setLoading(false);
       return;
+    }
+
+    if (data.user) {
+      try {
+        await syncMessagingKeysFromPassword(data.user.id, password, supabase);
+      } catch {
+        // Login still succeeds; messenger can prompt for password restore if needed.
+      }
     }
 
     router.push(redirectTo);

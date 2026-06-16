@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { syncMessagingKeysFromPassword } from "@/lib/messengerCrypto";
 import { Compass, Mail, Lock, User, AtSign, Loader2, AlertCircle } from "lucide-react";
 
 export function SignupForm() {
@@ -60,6 +61,14 @@ export function SignupForm() {
         },
         { onConflict: "id" }
       );
+
+      if (data.session) {
+        try {
+          await syncMessagingKeysFromPassword(data.user.id, password, supabase);
+        } catch {
+          // Keys will be created on first login if email confirmation is required.
+        }
+      }
     }
 
     setSuccess(true);

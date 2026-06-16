@@ -17,6 +17,9 @@ import {
   decryptPayload,
   deriveConversationKey,
   ensureUserEncryptionKeys,
+  exportEncryptionKeyBackup,
+  importEncryptionKeyBackup,
+  restoreMessagingKeysFromPassword,
   encryptAndUploadImage,
   encryptPayload,
   isEncryptedContent,
@@ -56,6 +59,9 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [showKeysResetNotice, setShowKeysResetNotice] = useState(false);
+  const [restorePassword, setRestorePassword] = useState("");
+  const [restoringKeys, setRestoringKeys] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -65,6 +71,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const blobUrlsRef = useRef<string[]>([]);
   const didInitRef = useRef(false);
   const presenceRef = useRef<PresenceStatus>("online");
+  const keysRegeneratedRef = useRef(false);
+  const keyBackupInputRef = useRef<HTMLInputElement>(null);
   const openRef = useRef(open);
   const activeFriendRef = useRef(activeFriendId);
   const conversationRef = useRef(conversationId);
@@ -77,6 +85,11 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   presenceRef.current = presence;
 
   const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
+
+  const getDecryptOptions = useCallback(
+    () => ({ keysRegenerated: keysRegeneratedRef.current }),
+    []
+  );
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -158,7 +171,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
     revokeBlobUrls();
     const fixed = await Promise.all(
-      prev.map((message) => decryptDirectMessage(message, key, supabase))
+      prev.map((message) => decryptDirectMessage(message, key, supabase, getDecryptOptions()))
     );
     fixed.forEach((message) => {
       if (message.decryptedImageUrl) {
@@ -166,7 +179,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       }
     });
     setMessages(fixed);
-  }, [resolveConversationKey, supabase, revokeBlobUrls]);
+  }, [resolveConversationKey, supabase, revokeBlobUrls, getDecryptOptions]);
 
   const refreshInbox = useCallback(async () => {
     const { data: friendships } = await supabase
@@ -253,9 +266,9 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                 conversation.id
               );
               const payload = await decryptPayload(key, lastMessage.content);
-              lastMessagePreview = previewFromPayload(payload);
+              lastMessagePreview = previewFromPayload(payload, keysRegeneratedRef.current);
             } catch {
-              lastMessagePreview = "🔒 Encrypted message";
+              lastMessagePreview = previewFromPayload(null, keysRegeneratedRef.current);
             }
           } else {
             lastMessagePreview = "🔒 Encrypted message";
@@ -324,7 +337,12 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       const conversationKey = await resolveConversationKey(convId, friendId);
       const decrypted = await Promise.all(
         ((data || []) as UiDirectMessage[]).map(async (message) => {
-          const uiMessage = await decryptDirectMessage(message, conversationKey, supabase);
+          const uiMessage = await decryptDirectMessage(
+            message,
+            conversationKey,
+            supabase,
+            getDecryptOptions()
+          );
           if (uiMessage.decryptedImageUrl) {
             blobUrlsRef.current.push(uiMessage.decryptedImageUrl);
           }
@@ -337,7 +355,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       await markConversationRead(convId);
       setTimeout(scrollToBottom, 50);
     },
-    [supabase, markConversationRead, scrollToBottom, resolveConversationKey, revokeBlobUrls]
+    [supabase, markConversationRead, scrollToBottom, resolveConversationKey, revokeBlobUrls, getDecryptOptions]
   );
 
   const openChatWithFriend = useCallback(
@@ -416,7 +434,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         const uiMessage = await decryptDirectMessage(
           data as UiDirectMessage,
           conversationKey,
-          supabase
+          supabase,
+          getDecryptOptions()
         );
         if (uiMessage.decryptedImageUrl) {
           blobUrlsRef.current.push(uiMessage.decryptedImageUrl);
@@ -439,10 +458,9 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       scrollToBottom,
       refreshInbox,
       getConversationKey,
+      getDecryptOptions,
     ]
   );
-
-  const handleImageUpload = useCallback(
     async (file: File) => {
       if (!conversationId || !activeFriendId || uploadingImage) return;
 
@@ -529,8 +547,14 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     didInitRef.current = true;
 
     async function init() {
-      const { privateKey } = await ensureUserEncryptionKeys(userId, supabase);
+      const { privateKey, keysRegenerated } = await ensureUserEncryptionKeys(userId, supabase);
       privateKeyRef.current = privateKey;
+
+      if (keysRegenerated) {
+        keysRegeneratedRef.current = true;
+        setShowKeysResetNotice(true);
+        conversationKeysRef.current.clear();
+      }
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -596,7 +620,12 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
               message.conversation_id,
               friendId
             );
-            const uiMessage = await decryptDirectMessage(message, conversationKey, supabase);
+            const uiMessage = await decryptDirectMessage(
+            message,
+            conversationKey,
+            supabase,
+            getDecryptOptions()
+          );
             if (uiMessage.decryptedImageUrl) {
               blobUrlsRef.current.push(uiMessage.decryptedImageUrl);
             }
@@ -650,10 +679,21 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles" },
         (payload) => {
-          const updated = payload.new as { id: string; presence_status?: PresenceStatus };
-          if (updated.id === userId && updated.presence_status) {
-            setPresence(updated.presence_status);
+          const updated = payload.new as {
+            id: string;
+            presence_status?: PresenceStatus;
+            encryption_public_key?: string | null;
+          };
+
+          if (updated.id === userId) {
+            if (updated.presence_status) {
+              setPresence(updated.presence_status);
+            }
             return;
+          }
+
+          if (updated.encryption_public_key) {
+            conversationKeysRef.current.clear();
           }
 
           setFriends((prev) =>
@@ -662,10 +702,20 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                 ? {
                     ...friend,
                     presence_status: updated.presence_status || friend.presence_status,
+                    encryption_public_key:
+                      updated.encryption_public_key ?? friend.encryption_public_key,
                   }
                 : friend
             )
           );
+
+          if (
+            updated.encryption_public_key &&
+            activeFriendRef.current === updated.id &&
+            conversationRef.current
+          ) {
+            void loadMessagesRef.current(conversationRef.current, updated.id);
+          }
         }
       )
       .subscribe();
@@ -708,6 +758,82 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       scrollToBottom();
     }
   }, [open, activeFriendId, conversationId, messages.length, scrollToBottom]);
+
+  const downloadKeyBackup = useCallback(() => {
+    const backup = exportEncryptionKeyBackup(userId);
+    if (!backup) {
+      setSendError("No encryption keys found to back up.");
+      return;
+    }
+    const blob = new Blob([backup], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "treasure-atlas-message-keys.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [userId]);
+
+  const restoreKeyBackup = useCallback(
+    async (file: File) => {
+      try {
+        const backup = await file.text();
+        const { privateKey } = await importEncryptionKeyBackup(userId, backup, supabase);
+        privateKeyRef.current = privateKey;
+        keysRegeneratedRef.current = false;
+        setShowKeysResetNotice(false);
+        conversationKeysRef.current.clear();
+        if (conversationId && activeFriendId) {
+          await loadMessages(conversationId, activeFriendId);
+        }
+        await refreshInbox();
+      } catch {
+        setSendError("Invalid key backup file.");
+      }
+    },
+    [userId, supabase, conversationId, activeFriendId, loadMessages, refreshInbox]
+  );
+
+  const restoreKeysWithPassword = useCallback(async () => {
+    if (!restorePassword.trim()) return;
+
+    setRestoringKeys(true);
+    setSendError(null);
+
+    const restored = await restoreMessagingKeysFromPassword(
+      userId,
+      restorePassword,
+      supabase
+    );
+
+    if (!restored) {
+      setSendError("Could not restore keys. Check your login password and try again.");
+      setRestoringKeys(false);
+      return;
+    }
+
+    privateKeyRef.current = (
+      await ensureUserEncryptionKeys(userId, supabase)
+    ).privateKey;
+    keysRegeneratedRef.current = false;
+    setShowKeysResetNotice(false);
+    setRestorePassword("");
+    conversationKeysRef.current.clear();
+
+    if (conversationId && activeFriendId) {
+      await loadMessages(conversationId, activeFriendId);
+    }
+    await refreshInbox();
+    setRestoringKeys(false);
+  }, [
+    restorePassword,
+    userId,
+    supabase,
+    conversationId,
+    activeFriendId,
+    loadMessages,
+    refreshInbox,
+  ]);
 
   return (
     <>
@@ -754,6 +880,73 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
               </button>
             </div>
           </div>
+
+          <input
+            ref={keyBackupInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void restoreKeyBackup(file);
+              e.target.value = "";
+            }}
+          />
+
+          {showKeysResetNotice && (
+            <div className="px-4 py-3 border-b border-amber-700/40 bg-amber-950/40 text-xs text-amber-100/90">
+              <p>
+                Browser data was cleared on this device. Enter your <strong>login password</strong>{" "}
+                to restore your encrypted message history, or use a saved key backup file.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <input
+                  type="password"
+                  value={restorePassword}
+                  onChange={(e) => setRestorePassword(e.target.value)}
+                  placeholder="Your login password"
+                  className="input-field flex-1 py-2 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void restoreKeysWithPassword();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void restoreKeysWithPassword()}
+                  disabled={restoringKeys || !restorePassword.trim()}
+                  className="px-3 py-2 rounded-md bg-gold-600 text-slate-950 font-medium hover:bg-gold-500 disabled:opacity-50"
+                >
+                  {restoringKeys ? "Restoring..." : "Restore messages"}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={downloadKeyBackup}
+                  className="px-2.5 py-1 rounded-md bg-amber-900/50 border border-amber-700/50 hover:bg-amber-900/70"
+                >
+                  Download key file
+                </button>
+                <button
+                  type="button"
+                  onClick={() => keyBackupInputRef.current?.click()}
+                  className="px-2.5 py-1 rounded-md bg-amber-900/50 border border-amber-700/50 hover:bg-amber-900/70"
+                >
+                  Upload key file
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowKeysResetNotice(false)}
+                  className="px-2.5 py-1 rounded-md text-amber-200/70 hover:text-amber-100"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-1 min-h-0">
             <div
