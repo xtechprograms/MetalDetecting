@@ -263,11 +263,18 @@ export async function decryptDirectMessage(
   conversationKey: CryptoKey | null,
   supabase: SupabaseClient
 ): Promise<UiDirectMessage> {
-  if (!message.is_encrypted || !conversationKey) {
+  if (!message.is_encrypted) {
     return {
       ...message,
       decryptedText: message.content,
       decryptedImageUrl: message.image_url || undefined,
+    };
+  }
+
+  if (!conversationKey) {
+    return {
+      ...message,
+      decryptedText: "🔒 Encrypted message",
     };
   }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { notifyMessengerFriendsChanged } from "@/lib/messenger";
 import { UserPlus, Loader2, Check, Clock, X } from "lucide-react";
 
 export function AddFriendButton({
@@ -78,10 +79,13 @@ export function FriendRequestActions({
 
   async function accept() {
     setLoading(true);
-    await supabase
+    const { error } = await supabase
       .from("friendships")
       .update({ status: "accepted" })
       .eq("id", friendshipId);
+    if (!error) {
+      notifyMessengerFriendsChanged();
+    }
     onAccept();
     setLoading(false);
   }

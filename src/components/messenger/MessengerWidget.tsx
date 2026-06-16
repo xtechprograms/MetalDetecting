@@ -6,6 +6,7 @@ import type { MessengerFriend, PresenceStatus } from "@/types/database";
 import { getInitials } from "@/lib/utils";
 import {
   formatMessageTime,
+  MESSENGER_FRIENDS_CHANGED,
   playMessageSound,
   presenceColor,
   presenceLabel,
@@ -18,6 +19,7 @@ import {
   ensureUserEncryptionKeys,
   encryptAndUploadImage,
   encryptPayload,
+  isEncryptedContent,
   parsePublicKeyJwkFromProfile,
   previewFromPayload,
   type UiDirectMessage,
@@ -53,6 +55,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const [loadingChat, setLoadingChat] = useState(false);
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [unreadTotal, setUnreadTotal] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,10 +66,12 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const openRef = useRef(open);
   const activeFriendRef = useRef(activeFriendId);
   const conversationRef = useRef(conversationId);
+  const messagesRef = useRef(messages);
 
   openRef.current = open;
   activeFriendRef.current = activeFriendId;
   conversationRef.current = conversationId;
+  messagesRef.current = messages;
 
   const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
 
@@ -86,16 +91,79 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
       if (!privateKeyRef.current) return null;
 
-      const friend = friends.find((item) => item.id === friendId);
-      const friendPublicJwk = parsePublicKeyJwkFromProfile(friend?.encryption_public_key);
+      let friendPublicJwk = parsePublicKeyJwkFromProfile(
+        friends.find((item) => item.id === friendId)?.encryption_public_key
+      );
+
+      if (!friendPublicJwk) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("encryption_public_key")
+          .eq("id", friendId)
+          .maybeSingle();
+        friendPublicJwk = parsePublicKeyJwkFromProfile(data?.encryption_public_key);
+      }
+
       if (!friendPublicJwk) return null;
 
       const key = await deriveConversationKey(privateKeyRef.current, friendPublicJwk, convId);
       conversationKeysRef.current.set(convId, key);
       return key;
     },
-    [friends]
+    [friends, supabase]
   );
+
+  const waitForPrivateKey = useCallback(async (timeoutMs = 8000): Promise<boolean> => {
+    if (privateKeyRef.current) return true;
+    const deadline = Date.now() + timeoutMs;
+    while (!privateKeyRef.current && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return !!privateKeyRef.current;
+  }, []);
+
+  const resolveConversationKey = useCallback(
+    async (convId: string, friendId: string): Promise<CryptoKey | null> => {
+      await waitForPrivateKey();
+      let key = await getConversationKey(convId, friendId);
+      if (!key) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        key = await getConversationKey(convId, friendId);
+      }
+      return key;
+    },
+    [getConversationKey, waitForPrivateKey]
+  );
+
+  const redecryptVisibleMessages = useCallback(async () => {
+    const convId = conversationRef.current;
+    const friendId = activeFriendRef.current;
+    if (!convId || !friendId || !privateKeyRef.current) return;
+
+    const prev = messagesRef.current;
+    const needsFix = prev.some(
+      (message) =>
+        message.is_encrypted &&
+        (!message.decryptedText ||
+          message.decryptedText === "🔒 Encrypted message" ||
+          isEncryptedContent(message.decryptedText))
+    );
+    if (!needsFix) return;
+
+    const key = await resolveConversationKey(convId, friendId);
+    if (!key) return;
+
+    revokeBlobUrls();
+    const fixed = await Promise.all(
+      prev.map((message) => decryptDirectMessage(message, key, supabase))
+    );
+    fixed.forEach((message) => {
+      if (message.decryptedImageUrl) {
+        blobUrlsRef.current.push(message.decryptedImageUrl);
+      }
+    });
+    setMessages(fixed);
+  }, [resolveConversationKey, supabase, revokeBlobUrls]);
 
   const refreshInbox = useCallback(async () => {
     const { data: friendships } = await supabase
@@ -189,6 +257,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
           } else {
             lastMessagePreview = "🔒 Encrypted message";
           }
+        } else if (lastMessage.is_encrypted) {
+          lastMessagePreview = "🔒 Encrypted message";
         } else if (lastMessage.image_url) {
           lastMessagePreview = "📷 Photo";
         } else {
@@ -198,7 +268,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
       return {
         ...profile,
-        presence_status: (profile.presence_status as PresenceStatus) || "offline",
+        presence_status: (profile.presence_status as PresenceStatus) || "online",
         conversationId: conversation?.id,
         lastMessage: lastMessagePreview,
         lastMessageAt: lastMessage?.created_at || conversation?.last_message_at,
@@ -246,7 +316,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         .order("created_at", { ascending: true })
         .limit(100);
 
-      const conversationKey = await getConversationKey(convId, friendId);
+      const conversationKey = await resolveConversationKey(convId, friendId);
       const decrypted = await Promise.all(
         ((data || []) as UiDirectMessage[]).map(async (message) => {
           const uiMessage = await decryptDirectMessage(message, conversationKey, supabase);
@@ -262,7 +332,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       await markConversationRead(convId);
       setTimeout(scrollToBottom, 50);
     },
-    [supabase, markConversationRead, scrollToBottom, getConversationKey, revokeBlobUrls]
+    [supabase, markConversationRead, scrollToBottom, resolveConversationKey, revokeBlobUrls]
   );
 
   const openChatWithFriend = useCallback(
@@ -291,32 +361,53 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       if (!conversationId || !activeFriendId || sending) return;
       if (!content.trim() && !imagePath) return;
 
+      setSending(true);
+      setSendError(null);
+
       const conversationKey = await getConversationKey(conversationId, activeFriendId);
-      if (!conversationKey) {
+      const trimmed = content.trim();
+
+      let messageContent: string;
+      let isEncrypted = false;
+
+      if (conversationKey) {
+        messageContent = await encryptPayload(conversationKey, {
+          text: trimmed,
+          imagePath: imagePath || undefined,
+          imageIv: imageIv || undefined,
+        });
+        isEncrypted = true;
+      } else if (imagePath) {
+        setSendError("Photo sharing needs both friends to open Messages once.");
         setSending(false);
         return;
+      } else if (!privateKeyRef.current) {
+        setSendError("Setting up encryption — try again in a moment.");
+        setSending(false);
+        return;
+      } else {
+        messageContent = trimmed;
       }
-
-      setSending(true);
-      const encryptedContent = await encryptPayload(conversationKey, {
-        text: content.trim(),
-        imagePath: imagePath || undefined,
-        imageIv: imageIv || undefined,
-      });
 
       const { data, error } = await supabase
         .from("direct_messages")
         .insert({
           conversation_id: conversationId,
           sender_id: userId,
-          content: encryptedContent,
+          content: messageContent,
           image_url: null,
-          is_encrypted: true,
+          is_encrypted: isEncrypted,
         })
         .select("*")
         .single();
 
-      if (!error && data) {
+      if (error) {
+        setSendError("Could not send message. Please try again.");
+        setSending(false);
+        return;
+      }
+
+      if (data) {
         const uiMessage = await decryptDirectMessage(
           data as UiDirectMessage,
           conversationKey,
@@ -354,6 +445,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       try {
         const conversationKey = await getConversationKey(conversationId, activeFriendId);
         if (!conversationKey) {
+          setSendError("Photo sharing needs both friends to open Messages once.");
           setUploadingImage(false);
           return;
         }
@@ -401,18 +493,13 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       const { privateKey } = await ensureUserEncryptionKeys(userId, supabase);
       privateKeyRef.current = privateKey;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("presence_status")
-        .eq("id", userId)
-        .maybeSingle();
-
-      setPresence((profile?.presence_status as PresenceStatus) || "offline");
+      await updatePresence("online");
       await refreshInbox();
+      await redecryptVisibleMessages();
     }
 
     init();
-  }, [supabase, userId, refreshInbox]);
+  }, [supabase, userId, refreshInbox, updatePresence, redecryptVisibleMessages]);
 
   useEffect(() => {
     return () => {
@@ -432,7 +519,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
           const isActiveConversation = message.conversation_id === conversationRef.current;
 
           if (isActiveConversation && openRef.current && activeFriendRef.current) {
-            const conversationKey = await getConversationKey(
+            const conversationKey = await resolveConversationKey(
               message.conversation_id,
               activeFriendRef.current
             );
@@ -443,6 +530,13 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
             setMessages((prev) =>
               prev.some((item) => item.id === uiMessage.id) ? prev : [...prev, uiMessage]
             );
+            if (
+              message.is_encrypted &&
+              (!conversationKey ||
+                uiMessage.decryptedText === "🔒 Encrypted message")
+            ) {
+              setTimeout(() => void redecryptVisibleMessages(), 400);
+            }
             if (!isMine) {
               await markConversationRead(message.conversation_id);
             }
@@ -451,6 +545,28 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
             playMessageSound();
           }
 
+          await refreshInbox();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "friendships" },
+        async (payload) => {
+          const row = payload.new as {
+            requester_id?: string;
+            addressee_id?: string;
+            status?: string;
+          };
+          if (row.requester_id !== userId && row.addressee_id !== userId) return;
+          await refreshInbox();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "friendships" },
+        async (payload) => {
+          const row = payload.old as { requester_id?: string; addressee_id?: string };
+          if (row.requester_id !== userId && row.addressee_id !== userId) return;
           await refreshInbox();
         }
       )
@@ -476,7 +592,22 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId, refreshInbox, markConversationRead, scrollToBottom, getConversationKey]);
+  }, [supabase, userId, refreshInbox, markConversationRead, scrollToBottom, resolveConversationKey, redecryptVisibleMessages]);
+
+  useEffect(() => {
+    function handleFriendsChanged() {
+      void refreshInbox();
+    }
+
+    window.addEventListener(MESSENGER_FRIENDS_CHANGED, handleFriendsChanged);
+    return () => window.removeEventListener(MESSENGER_FRIENDS_CHANGED, handleFriendsChanged);
+  }, [refreshInbox]);
+
+  useEffect(() => {
+    if (open) {
+      void refreshInbox();
+    }
+  }, [open, refreshInbox]);
 
   useEffect(() => {
     if (open && activeFriendId && conversationId) {
@@ -487,7 +618,13 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-4 sm:right-6 z-[90] w-[min(calc(100vw-2rem),380px)] h-[min(70dvh,520px)] glass-card border border-slate-700/60 shadow-2xl flex flex-col overflow-hidden animate-fade-in">
+        <div
+          className="fixed bottom-20 sm:bottom-24 right-2 sm:right-4 md:right-6 z-[90]
+            w-[calc(100vw-1rem)] sm:w-[min(calc(100vw-2rem),400px)] md:w-[440px] lg:w-[500px] xl:w-[540px]
+            h-[min(88dvh,620px)] sm:h-[min(80dvh,580px)] md:h-[min(82dvh,640px)] lg:h-[min(84dvh,700px)] xl:h-[min(86dvh,760px)]
+            max-h-[calc(100dvh-5.5rem)]
+            glass-card border border-slate-700/60 shadow-2xl flex flex-col overflow-hidden animate-fade-in"
+        >
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-700/50 bg-slate-900/80">
             <div className="min-w-0">
               <p className="font-semibold text-sm">Messages</p>
@@ -526,7 +663,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
           <div className="flex flex-1 min-h-0">
             <div
-              className={`${activeFriend ? "hidden sm:flex" : "flex"} w-full sm:w-36 border-r border-slate-700/50 flex-col min-h-0`}
+              className={`${activeFriend ? "hidden sm:flex" : "flex"} w-full sm:w-40 md:w-44 lg:w-48 border-r border-slate-700/50 flex-col min-h-0`}
             >
               <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-slate-500">
                 Friends
@@ -604,9 +741,14 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                     </button>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold truncate">{activeFriend.display_name}</p>
-                      <p className="text-[11px] text-slate-500">
-                        {presenceLabel(activeFriend.presence_status)}
-                        {!activeFriend.encryption_public_key && " · Encryption pending"}
+                      <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${presenceColor(activeFriend.presence_status)}`}
+                          aria-hidden
+                        />
+                        <span>{presenceLabel(activeFriend.presence_status)}</span>
+                        {!activeFriend.encryption_public_key &&
+                          " · End-to-end lock when they open Messages"}
                       </p>
                     </div>
                   </div>
@@ -625,7 +767,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                             className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                           >
                             <div
-                              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                              className={`max-w-[min(85%,420px)] rounded-2xl px-3 py-2 text-sm ${
                                 isMine
                                   ? "bg-gold-500/20 border border-gold-500/30 text-slate-100"
                                   : "bg-slate-800/80 border border-slate-700/50 text-slate-200"
@@ -671,7 +813,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                   )}
 
                   <form
-                    className="border-t border-slate-700/50 p-3 flex items-end gap-2"
+                    className="border-t border-slate-700/50 p-3 space-y-2"
                     onSubmit={(e) => {
                       e.preventDefault();
                       void sendMessage(messageInput);
@@ -688,33 +830,16 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                         e.target.value = "";
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowEmoji((prev) => !prev)}
-                      className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 shrink-0"
-                      aria-label="Insert emoji"
-                    >
-                      <Smile className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 shrink-0"
-                      aria-label="Share photo"
-                    >
-                      {uploadingImage ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <ImagePlus className="w-4 h-4" />
-                      )}
-                    </button>
+
                     <textarea
                       value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
+                      onChange={(e) => {
+                        setMessageInput(e.target.value);
+                        if (sendError) setSendError(null);
+                      }}
                       placeholder="Write a message..."
-                      rows={1}
-                      className="input-field min-h-[40px] max-h-24 py-2 text-sm resize-none flex-1"
+                      rows={2}
+                      className="input-field w-full min-h-[52px] max-h-32 py-2.5 text-sm resize-none"
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
                           e.preventDefault();
@@ -722,18 +847,50 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                         }
                       }}
                     />
-                    <button
-                      type="submit"
-                      disabled={sending || (!messageInput.trim() && !uploadingImage)}
-                      className="btn-primary p-2.5 shrink-0"
-                      aria-label="Send message"
-                    >
-                      {sending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                    </button>
+
+                    {sendError && (
+                      <p className="text-xs text-amber-400/90 px-1">{sendError}</p>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEmoji((prev) => !prev)}
+                        className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 shrink-0"
+                        aria-label="Insert emoji"
+                      >
+                        <Smile className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 shrink-0"
+                        aria-label="Share photo"
+                      >
+                        {uploadingImage ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <ImagePlus className="w-4 h-4" />
+                        )}
+                      </button>
+                      <div className="flex-1" />
+                      <button
+                        type="submit"
+                        disabled={sending || (!messageInput.trim() && !uploadingImage)}
+                        className="btn-primary px-4 py-2.5 shrink-0 inline-flex items-center gap-2"
+                        aria-label="Send message"
+                      >
+                        {sending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span className="text-sm font-medium">Send</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </form>
                 </>
               ) : (

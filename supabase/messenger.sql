@@ -1,7 +1,7 @@
 -- Direct messaging between friends (run after schema.sql + notifications.sql)
 
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS presence_status TEXT NOT NULL DEFAULT 'offline'
+  ADD COLUMN IF NOT EXISTS presence_status TEXT NOT NULL DEFAULT 'online'
     CHECK (presence_status IN ('online', 'busy', 'offline'));
 
 ALTER TABLE public.profiles

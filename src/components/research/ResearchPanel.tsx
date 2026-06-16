@@ -161,13 +161,40 @@ export function ResearchPanel() {
     setOldMapsLoading(false);
   }
 
+  async function loadNearbyHistoryAtPoint(
+    researchLat: number,
+    researchLng: number,
+    hints?: { placeName?: string; region?: string; country?: string }
+  ) {
+    try {
+      const params = new URLSearchParams({
+        lat: String(researchLat),
+        lng: String(researchLng),
+        radius: String(radius),
+        unit: unitSystem,
+        country,
+      });
+      if (hints?.placeName) params.set("placeName", hints.placeName);
+      if (hints?.region) params.set("region", hints.region);
+
+      const res = await fetch(`/api/research/nearby?${params}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setNearbyResult(null);
+        return;
+      }
+      setNearbyResult(data as NearbyHistoryResult);
+    } catch {
+      setNearbyResult(null);
+    }
+  }
+
   async function researchLocation(researchLat: number, researchLng: number) {
     setLoading(true);
     setError(null);
     setLat(researchLat);
     setLng(researchLng);
     setBookmarked(false);
-    setNearbyResult(null);
     setSelectedSite(null);
     setOldMaps([]);
 
@@ -176,9 +203,15 @@ export function ResearchPanel() {
       if (!res.ok) throw new Error("Failed to fetch area history");
       const data: AreaHistory = await res.json();
       setHistory(data);
+      await loadNearbyHistoryAtPoint(researchLat, researchLng, {
+        placeName: data.placeName,
+        region: data.region,
+        country: data.country,
+      });
       loadOldMaps(researchLat, researchLng, data.placeName, country);
     } catch {
       setError("Unable to research this location. Please try again.");
+      setNearbyResult(null);
     }
     setLoading(false);
   }
@@ -205,6 +238,11 @@ export function ResearchPanel() {
       setLat(data.coordinates.lat);
       setLng(data.coordinates.lng);
       setBookmarked(false);
+      await loadNearbyHistoryAtPoint(data.coordinates.lat, data.coordinates.lng, {
+        placeName: data.placeName,
+        region: data.region,
+        country: data.country,
+      });
       loadOldMaps(data.coordinates.lat, data.coordinates.lng, data.placeName, country);
     } catch {
       setError("Search failed. Please try again.");
@@ -507,7 +545,8 @@ export function ResearchPanel() {
 
         {mode === "area" && (
           <p className="text-xs text-slate-500">
-            Or click anywhere on the map below to research that area
+            Or click anywhere on the map below to research that area. Nearby historic sites load
+            within {formatRadiusLabel(radius, unitSystem)} (change radius in History Near Me).
           </p>
         )}
       </div>
@@ -544,7 +583,10 @@ export function ResearchPanel() {
         <div className="space-y-4 animate-fade-in">
           <div className="glass-card p-6">
             <h2 className="font-display text-xl font-bold gold-gradient-text mb-1">
-              History near {nearbyResult.center.postalCode || zipCode}
+              Historic sites near{" "}
+              {mode === "nearby"
+                ? nearbyResult.center.postalCode || zipCode
+                : nearbyResult.center.placeName || history?.placeName || "this area"}
             </h2>
             <p className="text-sm text-slate-400">
               {nearbyResult.center.placeName} · within {formatRadiusLabel(radius, unitSystem)} ·{" "}
@@ -555,7 +597,11 @@ export function ResearchPanel() {
           <OldMapsSection
             maps={oldMaps}
             loading={oldMapsLoading}
-            locationLabel={oldMapsLabel || nearbyResult.center.postalCode || zipCode}
+            locationLabel={
+              mode === "nearby"
+                ? oldMapsLabel || nearbyResult.center.postalCode || zipCode
+                : oldMapsLabel || history?.placeName || nearbyResult.center.placeName
+            }
           />
 
           {nearbyResult.sites.length === 0 ? (
@@ -613,11 +659,13 @@ export function ResearchPanel() {
 
       {history && !loading && !modalOpen && mode === "area" && (
         <div className="space-y-4">
-          <OldMapsSection
-            maps={oldMaps}
-            loading={oldMapsLoading}
-            locationLabel={oldMapsLabel || history.placeName}
-          />
+          {!nearbyResult && (
+            <OldMapsSection
+              maps={oldMaps}
+              loading={oldMapsLoading}
+              locationLabel={oldMapsLabel || history.placeName}
+            />
+          )}
           <div className="flex justify-end">
             <button
               onClick={bookmarkSite}

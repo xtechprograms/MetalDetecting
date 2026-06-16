@@ -51,11 +51,13 @@ export const QUICK_EMOJIS = [
 export function presenceColor(status: string): string {
   switch (status) {
     case "online":
-      return "bg-green-400";
+      return "bg-green-500";
     case "busy":
-      return "bg-amber-400";
+      return "bg-orange-500";
+    case "offline":
+      return "bg-red-500";
     default:
-      return "bg-slate-500";
+      return "bg-green-500";
   }
 }
 
@@ -80,4 +82,11 @@ export function formatMessageTime(iso: string): string {
   }
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+export const MESSENGER_FRIENDS_CHANGED = "ta-messenger-friends-changed";
+
+export function notifyMessengerFriendsChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(MESSENGER_FRIENDS_CHANGED));
 }

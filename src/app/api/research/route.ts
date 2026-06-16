@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchAreaHistory, geocodeQuery } from "@/lib/research";
 
+function geocodeToHistoryContext(location: Awaited<ReturnType<typeof geocodeQuery>>) {
+  if (!location) return undefined;
+
+  const locality = location.placeName.split(",")[0]?.trim() || location.placeName;
+
+  return {
+    placeName: location.placeName,
+    city: locality,
+    town: "",
+    village: "",
+    county: "",
+    state: location.region || "",
+    country: location.country || "",
+  };
+}
+
 export async function GET(request: NextRequest) {
   const lat = request.nextUrl.searchParams.get("lat");
   const lng = request.nextUrl.searchParams.get("lng");
@@ -12,7 +28,11 @@ export async function GET(request: NextRequest) {
       if (!location) {
         return NextResponse.json({ error: "Location not found" }, { status: 404 });
       }
-      const history = await fetchAreaHistory(location.lat, location.lng);
+      const history = await fetchAreaHistory(
+        location.lat,
+        location.lng,
+        geocodeToHistoryContext(location)
+      );
       return NextResponse.json(history);
     } catch {
       return NextResponse.json({ error: "Failed to fetch area history" }, { status: 500 });

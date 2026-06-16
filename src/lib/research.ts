@@ -243,7 +243,7 @@ async function searchWikipediaTitle(query: string): Promise<string | null> {
   }
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeContext> {
+export async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeContext> {
   const fallback: ReverseGeocodeContext = {
     placeName: "Unknown Location",
     city: "",
