@@ -13,9 +13,11 @@ import {
   QUICK_EMOJIS,
 } from "@/lib/messenger";
 import {
+  buildReplyPreview,
   decryptDirectMessage,
   decryptPayload,
   deriveConversationKey,
+  encodePlaintextPayload,
   ensureUserEncryptionKeys,
   prepareMessagingKeys,
   restoreMessagingKeysFromPin,
@@ -27,11 +29,13 @@ import {
   isEncryptedContent,
   parsePublicKeyJwkFromProfile,
   previewFromPayload,
+  previewFromPlaintextContent,
   type UiDirectMessage,
   type MessagingPinLength,
 } from "@/lib/messengerCrypto";
 import {
   ChevronDown,
+  CornerDownRight,
   ImagePlus,
   Loader2,
   Lock,
@@ -79,6 +83,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingHistory, setDeletingHistory] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const [replyingTo, setReplyingTo] = useState<UiDirectMessage | null>(null);
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,12 +98,22 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const activeFriendRef = useRef(activeFriendId);
   const conversationRef = useRef(conversationId);
   const messagesRef = useRef(messages);
+  const replyingToRef = useRef(replyingTo);
 
   openRef.current = open;
   activeFriendRef.current = activeFriendId;
   conversationRef.current = conversationId;
   messagesRef.current = messages;
   presenceRef.current = presence;
+  replyingToRef.current = replyingTo;
+
+  const replyAuthorName = useCallback(
+    (senderId: string) => {
+      if (senderId === userId) return "You";
+      return activeFriend?.display_name || "Friend";
+    },
+    [userId, activeFriend?.display_name]
+  );
 
   const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
 
@@ -293,7 +309,10 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         } else if (lastMessage.image_url) {
           lastMessagePreview = "📷 Photo";
         } else {
-          lastMessagePreview = lastMessage.content;
+          lastMessagePreview = previewFromPlaintextContent(
+            lastMessage.content,
+            lastMessage.image_url
+          );
         }
       }
 
@@ -376,6 +395,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const openChatWithFriend = useCallback(
     async (friendId: string) => {
       setActiveFriendId(friendId);
+      setReplyingTo(null);
       setLoadingChat(true);
 
       const { data: convId, error } = await supabase.rpc("get_or_create_dm_conversation", {
@@ -482,16 +502,30 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
       const conversationKey = await getConversationKey(convId, activeFriendId);
       const trimmed = content.trim();
+      const replyTarget = replyingToRef.current;
+
+      const payload: {
+        text: string;
+        imagePath?: string;
+        imageIv?: string;
+        replyToId?: string;
+        replyPreview?: ReturnType<typeof buildReplyPreview>;
+      } = {
+        text: trimmed,
+        imagePath: imagePath || undefined,
+        imageIv: imageIv || undefined,
+      };
+
+      if (replyTarget) {
+        payload.replyToId = replyTarget.id;
+        payload.replyPreview = buildReplyPreview(replyTarget);
+      }
 
       let messageContent: string;
       let isEncrypted = false;
 
       if (conversationKey) {
-        messageContent = await encryptPayload(conversationKey, {
-          text: trimmed,
-          imagePath: imagePath || undefined,
-          imageIv: imageIv || undefined,
-        });
+        messageContent = await encryptPayload(conversationKey, payload);
         isEncrypted = true;
       } else if (imagePath) {
         setSendError("Photo sharing needs both friends to open Messages once.");
@@ -502,7 +536,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         setSending(false);
         return;
       } else {
-        messageContent = trimmed;
+        messageContent = encodePlaintextPayload(payload);
       }
 
       const { data, error } = await supabase
@@ -513,6 +547,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
           content: messageContent,
           image_url: null,
           is_encrypted: isEncrypted,
+          reply_to_id: replyTarget?.id ?? null,
         })
         .select("*")
         .single();
@@ -535,6 +570,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         }
         setMessages((prev) => [...prev, uiMessage]);
         setMessageInput("");
+        setReplyingTo(null);
         setShowEmoji(false);
         setTimeout(scrollToBottom, 50);
         await refreshInbox();
@@ -883,6 +919,17 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       scrollToBottom();
     }
   }, [open, activeFriendId, conversationId, messages.length, scrollToBottom]);
+
+  useEffect(() => {
+    if (!lightboxImageUrl) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setLightboxImageUrl(null);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxImageUrl]);
 
   const restoreKeysWithPin = useCallback(async () => {
     if (!restorePin.trim()) return;
@@ -1336,6 +1383,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                         setActiveFriendId(null);
                         setConversationId(null);
                         setMessages([]);
+                        setReplyingTo(null);
                       }}
                     >
                       <X className="w-4 h-4" />
@@ -1408,29 +1456,63 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                             key={message.id}
                             className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                           >
-                            <div
-                              className={`max-w-[min(85%,420px)] rounded-2xl px-3 py-2 text-sm ${
-                                isMine
-                                  ? "bg-gold-500/20 border border-gold-500/30 text-slate-100"
-                                  : "bg-slate-800/80 border border-slate-700/50 text-slate-200"
-                              }`}
-                            >
-                              {message.decryptedImageUrl && (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={message.decryptedImageUrl}
-                                  alt="Shared"
-                                  className="rounded-lg max-w-full max-h-48 object-cover mb-2"
-                                />
-                              )}
-                              {message.decryptedText && (
-                                <p className="whitespace-pre-wrap break-words">
-                                  {message.decryptedText}
+                            <div className="relative group max-w-[min(85%,420px)]">
+                              <div
+                                className={`relative rounded-2xl px-3 py-2 text-sm ${
+                                  isMine
+                                    ? "bg-gold-500/20 border border-gold-500/30 text-slate-100"
+                                    : "bg-slate-800/80 border border-slate-700/50 text-slate-200"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setReplyingTo(message)}
+                                  className="absolute top-1.5 right-1.5 p-1 rounded-md bg-slate-900/70 text-slate-400 hover:text-gold-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                  aria-label="Reply to message"
+                                  title="Reply"
+                                >
+                                  <CornerDownRight className="w-3.5 h-3.5" />
+                                </button>
+                                {message.replyPreview && (
+                                  <div
+                                    className={`mb-2 pl-2 border-l-2 ${
+                                      isMine ? "border-gold-400/60" : "border-slate-500"
+                                    }`}
+                                  >
+                                    <p className="text-[11px] font-medium text-slate-300">
+                                      {replyAuthorName(message.replyPreview.senderId)}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 line-clamp-2">
+                                      {message.replyPreview.hasImage &&
+                                      message.replyPreview.text === "Photo"
+                                        ? "📷 Photo"
+                                        : message.replyPreview.text}
+                                    </p>
+                                  </div>
+                                )}
+                                {message.decryptedImageUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLightboxImageUrl(message.decryptedImageUrl!)}
+                                    className="block mb-2 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-gold-500/50"
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={message.decryptedImageUrl}
+                                      alt="Shared photo — tap to enlarge"
+                                      className="rounded-lg max-w-full max-h-48 object-cover hover:opacity-90 transition-opacity cursor-zoom-in"
+                                    />
+                                  </button>
+                                )}
+                                {message.decryptedText && (
+                                  <p className="whitespace-pre-wrap break-words">
+                                    {message.decryptedText}
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-slate-500 mt-1 text-right">
+                                  {formatMessageTime(message.created_at)}
                                 </p>
-                              )}
-                              <p className="text-[10px] text-slate-500 mt-1 text-right">
-                                {formatMessageTime(message.created_at)}
-                              </p>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1461,6 +1543,29 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                       void sendMessage(messageInput);
                     }}
                   >
+                    {replyingTo && (
+                      <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700/50">
+                        <CornerDownRight className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0 border-l-2 border-gold-500/40 pl-2">
+                          <p className="text-[11px] font-medium text-gold-300/90">
+                            Replying to {replyAuthorName(replyingTo.sender_id)}
+                          </p>
+                          <p className="text-xs text-slate-400 truncate">
+                            {replyingTo.decryptedImageUrl && !replyingTo.decryptedText?.trim()
+                              ? "📷 Photo"
+                              : replyingTo.decryptedText || "Message"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setReplyingTo(null)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-slate-200 shrink-0"
+                          aria-label="Cancel reply"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -1562,6 +1667,32 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
           </span>
         )}
       </button>
+
+      {lightboxImageUrl && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo preview"
+          onClick={() => setLightboxImageUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImageUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-slate-900/80 text-slate-200 hover:text-white border border-slate-700"
+            aria-label="Close photo preview"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxImageUrl}
+            alt="Enlarged shared photo"
+            className="max-w-full max-h-[calc(100dvh-2rem)] object-contain rounded-lg"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 }

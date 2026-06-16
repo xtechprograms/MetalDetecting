@@ -56,7 +56,7 @@ export function FriendRequests({ userId }: { userId: string }) {
   if (requests.length === 0) return null;
 
   return (
-    <div className="glass-card p-6 mb-8">
+    <div id="friend-requests" className="glass-card p-6 mb-8 scroll-mt-24">
       <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
         <Bell className="w-5 h-5 text-gold-400" />
         Friend Requests ({requests.length})

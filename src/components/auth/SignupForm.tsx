@@ -101,17 +101,20 @@ export function SignupForm() {
             JSON.stringify({ pin: messagingPin, length: pinLength })
           );
         }
-      } else {
-        sessionStorage.setItem(
-          PENDING_MESSAGING_PIN_KEY,
-          JSON.stringify({ pin: messagingPin, length: pinLength })
-        );
+
+        router.push("/dashboard");
+        router.refresh();
+        return;
       }
+
+      sessionStorage.setItem(
+        PENDING_MESSAGING_PIN_KEY,
+        JSON.stringify({ pin: messagingPin, length: pinLength })
+      );
     }
 
     setSuccess(true);
     setLoading(false);
-    setTimeout(() => router.push("/dashboard"), 2000);
   }
 
   if (success) {
@@ -124,9 +127,12 @@ export function SignupForm() {
           Welcome, Detectorist!
         </h2>
         <p className="text-slate-400">
-          Your account is ready. Remember your messaging PIN — you will need it to
-          restore encrypted chats if you clear browser data.
+          Check your email to confirm your account, then sign in. Remember your messaging PIN — you
+          will need it to restore encrypted chats if you clear browser data.
         </p>
+        <Link href="/login" className="btn-primary mt-6 inline-flex">
+          Go to sign in
+        </Link>
       </div>
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database";
 import { Search, Loader2, Users } from "lucide-react";
@@ -73,22 +73,6 @@ function ProfileCard({
   profile: Profile;
   currentUserId: string;
 }) {
-  const [friendStatus, setFriendStatus] = useState<string | null>(null);
-  const supabase = createClient();
-
-  useEffect(() => {
-    supabase
-      .from("friendships")
-      .select("status")
-      .or(
-        `and(requester_id.eq.${currentUserId},addressee_id.eq.${profile.id}),and(requester_id.eq.${profile.id},addressee_id.eq.${currentUserId})`
-      )
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setFriendStatus(data.status);
-      });
-  }, [currentUserId, profile.id, supabase]);
-
   return (
     <div className="glass-card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
       <Link href={`/profile/${profile.username}`}>
@@ -122,7 +106,7 @@ function ProfileCard({
       <AddFriendButton
         targetUserId={profile.id}
         currentUserId={currentUserId}
-        existingStatus={friendStatus}
+        existingStatus={null}
       />
     </div>
   );

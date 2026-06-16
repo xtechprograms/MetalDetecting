@@ -2,14 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/types/database";
-import {
-  formatNotificationTime,
-  getNotificationHref,
-  getNotificationIcon,
-} from "@/lib/notifications";
+import { NotificationItem } from "@/components/notifications/NotificationItem";
 import { Bell, CheckCheck, Loader2, Trash2 } from "lucide-react";
 
 type NotificationBellProps = {
@@ -17,7 +12,6 @@ type NotificationBellProps = {
 };
 
 export function NotificationBell({ userId }: NotificationBellProps) {
-  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const [open, setOpen] = useState(false);
@@ -75,7 +69,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   useEffect(() => {
     if (!open) return;
 
-    function handlePointerDown(event: PointerEvent) {
+    function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       if (menuRef.current && !menuRef.current.contains(target)) {
         setOpen(false);
@@ -86,38 +80,37 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       if (event.key === "Escape") setOpen(false);
     }
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    const timerId = window.setTimeout(() => {
+      document.addEventListener("click", handleClickOutside);
+    }, 0);
+
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      clearTimeout(timerId);
+      document.removeEventListener("click", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
-  async function markAsRead(notification: Notification) {
-    if (notification.read_at) return;
-
-    const supabase = createClient();
-    await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .eq("id", notification.id)
-      .eq("user_id", userId);
-
+  function handleNotificationRead(notificationId: string) {
     setNotifications((prev) =>
       prev.map((item) =>
-        item.id === notification.id
-          ? { ...item, read_at: new Date().toISOString() }
+        item.id === notificationId
+          ? { ...item, read_at: item.read_at ?? new Date().toISOString() }
           : item
       )
     );
     setUnreadCount((count) => Math.max(count - 1, 0));
   }
 
-  async function handleNotificationClick(notification: Notification) {
-    await markAsRead(notification);
-    setOpen(false);
-    router.push(getNotificationHref(notification));
+  function handleNotificationRemove(notificationId: string) {
+    setNotifications((prev) => {
+      const removed = prev.find((item) => item.id === notificationId);
+      if (removed && !removed.read_at) {
+        setUnreadCount((count) => Math.max(count - 1, 0));
+      }
+      return prev.filter((item) => item.id !== notificationId);
+    });
   }
 
   async function markAllRead() {
@@ -249,50 +242,17 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto theme-scrollbar space-y-1 sm:max-h-[min(24rem,60dvh)]">
-              {notifications.map((notification) => {
-                const Icon = getNotificationIcon(notification.type);
-                const unread = !notification.read_at;
-
-                return (
-                  <button
-                    key={notification.id}
-                    type="button"
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl transition-colors min-h-[44px] ${
-                      unread
-                        ? "bg-gold-500/10 hover:bg-gold-500/15"
-                        : "hover:bg-slate-800/50"
-                    }`}
-                  >
-                    {notification.actor?.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={notification.actor.avatar_url}
-                        alt=""
-                        className="w-9 h-9 rounded-lg object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-gold-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{notification.title}</p>
-                      {notification.body && (
-                        <p className="text-xs text-slate-400 line-clamp-2 mt-0.5">
-                          {notification.body}
-                        </p>
-                      )}
-                      <p className="text-[11px] text-slate-500 mt-1">
-                        {formatNotificationTime(notification.created_at)}
-                      </p>
-                    </div>
-                    {unread && (
-                      <span className="w-2 h-2 rounded-full bg-gold-400 shrink-0 mt-2" />
-                    )}
-                  </button>
-                );
-              })}
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  userId={userId}
+                  compact
+                  onRead={handleNotificationRead}
+                  onRemove={handleNotificationRemove}
+                  onAction={() => setOpen(false)}
+                />
+              ))}
             </div>
           )}
 

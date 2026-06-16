@@ -51,7 +51,8 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 - **Encrypted attachments** — Photo uploads are encrypted client-side; the storage bucket is private (no public URLs)
 - **Plaintext fallback** — Text still sends if a friend has not opened Messages yet; encryption activates once both have keys
 - **Realtime delivery** — New messages arrive instantly with notification sound and unread badge on the launcher
-- **Emoji & photos** — Quick emoji picker and image sharing in conversations
+- **Emoji & photos** — Quick emoji picker and image sharing; tap photos to view full size
+- **Reply to messages** — Quote the message you are responding to in the thread
 - **Delete chat history** — Permanently clear all messages with a friend (removes the thread for both users)
 
 > **Encryption note:** At signup you set a **messaging PIN** (4 or 6 digits). Existing accounts can set a PIN in **Messages** (shield icon) if they have not already. Your message keys are wrapped with that PIN using PBKDF2 + AES-GCM before being stored on the server — we never store the PIN itself. If you clear browser data, open Messages and enter your PIN to restore encrypted chats. Metadata (who chatted, when) is still visible to the server.
@@ -129,6 +130,7 @@ npm install
 | 16 | `supabase/messenger-clear-history.sql` | RPC `clear_dm_conversation` — delete chat with a friend (both sides) |
 | 17 | `supabase/notifications-clear-history.sql` | RPC `clear_notification_history` — delete all your notifications |
 | 18 | `supabase/messenger-pin-backup.sql` | Messaging PIN length column (run if you already ran step 15 before PIN support) |
+| 19 | `supabase/messenger-replies.sql` | Reply-to-message support (`reply_to_id` column) |
 
 #### Optional / troubleshooting SQL
 
@@ -246,7 +248,7 @@ src/
 │   ├── messengerCrypto.ts  # E2EE key exchange and message crypto
 │   └── …                   # Supabase clients, geo, research, permissions
 └── types/                  # TypeScript types
-supabase/                   # SQL migrations (run 1–18 in order — see above)
+supabase/                   # SQL migrations (run 1–19 in order — see above)
 ```
 
 ## Responsible Detecting

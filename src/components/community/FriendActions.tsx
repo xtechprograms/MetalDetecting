@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { notifyMessengerFriendsChanged } from "@/lib/messenger";
 import { UserPlus, Loader2, Check, Clock, X } from "lucide-react";
@@ -14,24 +14,43 @@ export function AddFriendButton({
   currentUserId: string;
   existingStatus: string | null;
 }) {
-  const [status, setStatus] = useState(existingStatus);
+  const [status, setStatus] = useState<string | null>(existingStatus);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
+  const loadStatus = useCallback(async () => {
+    const { data } = await supabase
+      .from("friendships")
+      .select("status")
+      .or(
+        `and(requester_id.eq.${currentUserId},addressee_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},addressee_id.eq.${currentUserId})`
+      )
+      .maybeSingle();
+
+    setStatus(data?.status ?? null);
+  }, [currentUserId, targetUserId, supabase]);
+
   useEffect(() => {
-    setStatus(existingStatus);
-  }, [existingStatus]);
+    void loadStatus();
+  }, [loadStatus]);
 
   if (targetUserId === currentUserId) return null;
 
   async function sendRequest() {
     setLoading(true);
+
     const { error } = await supabase.from("friendships").insert({
       requester_id: currentUserId,
       addressee_id: targetUserId,
       status: "pending",
     });
-    if (!error) setStatus("pending");
+
+    if (!error || error.code === "23505") {
+      setStatus("pending");
+    } else {
+      await loadStatus();
+    }
+
     setLoading(false);
   }
 
@@ -54,7 +73,12 @@ export function AddFriendButton({
   }
 
   return (
-    <button onClick={sendRequest} className="btn-primary text-sm py-2" disabled={loading}>
+    <button
+      type="button"
+      onClick={() => void sendRequest()}
+      className="btn-primary text-sm py-2"
+      disabled={loading}
+    >
       {loading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
@@ -83,27 +107,34 @@ export function FriendRequestActions({
       .from("friendships")
       .update({ status: "accepted" })
       .eq("id", friendshipId);
+
     if (!error) {
       notifyMessengerFriendsChanged();
+      onAccept();
     }
-    onAccept();
+
     setLoading(false);
   }
 
   async function decline() {
     setLoading(true);
-    await supabase
+    const { error } = await supabase
       .from("friendships")
       .update({ status: "declined" })
       .eq("id", friendshipId);
-    onDecline();
+
+    if (!error) {
+      onDecline();
+    }
+
     setLoading(false);
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
       <button
-        onClick={accept}
+        type="button"
+        onClick={() => void accept()}
         className="btn-primary text-xs py-1.5 px-3"
         disabled={loading}
       >
@@ -111,7 +142,8 @@ export function FriendRequestActions({
         Accept
       </button>
       <button
-        onClick={decline}
+        type="button"
+        onClick={() => void decline()}
         className="btn-secondary text-xs py-1.5 px-3"
         disabled={loading}
       >
