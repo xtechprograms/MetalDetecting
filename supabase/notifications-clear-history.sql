@@ -1,4 +1,4 @@
--- Treasure Atlas | Migration 17 of 17: notifications-clear-history.sql
+-- Treasure Atlas | Migration 17 of 18: notifications-clear-history.sql
 -- Prerequisites: notifications.sql (step 9)
 -- Purpose: RPC clear_notification_history — permanently delete all notifications for the current user
 --

@@ -4,14 +4,31 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { syncMessagingKeysFromPassword } from "@/lib/messengerCrypto";
-import { Compass, Mail, Lock, User, AtSign, Loader2, AlertCircle } from "lucide-react";
+import {
+  PENDING_MESSAGING_PIN_KEY,
+  syncMessagingKeysFromPin,
+  validateMessagingPin,
+  type MessagingPinLength,
+} from "@/lib/messengerCrypto";
+import {
+  Compass,
+  Mail,
+  Lock,
+  User,
+  AtSign,
+  Loader2,
+  AlertCircle,
+  Shield,
+} from "lucide-react";
 
 export function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [pinLength, setPinLength] = useState<MessagingPinLength>(6);
+  const [messagingPin, setMessagingPin] = useState("");
+  const [confirmMessagingPin, setConfirmMessagingPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -31,6 +48,19 @@ export function SignupForm() {
 
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       setError("Username can only contain letters, numbers, and underscores");
+      setLoading(false);
+      return;
+    }
+
+    const pinValidation = validateMessagingPin(messagingPin, pinLength);
+    if (!pinValidation.valid) {
+      setError(pinValidation.error || "Invalid messaging PIN");
+      setLoading(false);
+      return;
+    }
+
+    if (messagingPin !== confirmMessagingPin) {
+      setError("Messaging PINs do not match");
       setLoading(false);
       return;
     }
@@ -64,10 +94,18 @@ export function SignupForm() {
 
       if (data.session) {
         try {
-          await syncMessagingKeysFromPassword(data.user.id, password, supabase);
+          await syncMessagingKeysFromPin(data.user.id, messagingPin, pinLength, supabase);
         } catch {
-          // Keys will be created on first login if email confirmation is required.
+          sessionStorage.setItem(
+            PENDING_MESSAGING_PIN_KEY,
+            JSON.stringify({ pin: messagingPin, length: pinLength })
+          );
         }
+      } else {
+        sessionStorage.setItem(
+          PENDING_MESSAGING_PIN_KEY,
+          JSON.stringify({ pin: messagingPin, length: pinLength })
+        );
       }
     }
 
@@ -86,7 +124,8 @@ export function SignupForm() {
           Welcome, Detectorist!
         </h2>
         <p className="text-slate-400">
-          Your account is ready. Redirecting to your dashboard...
+          Your account is ready. Remember your messaging PIN — you will need it to
+          restore encrypted chats if you clear browser data.
         </p>
       </div>
     );
@@ -183,6 +222,98 @@ export function SignupForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gold-700/30 bg-gold-950/20 p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <Shield className="w-5 h-5 text-gold-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-gold-200">Messaging PIN</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Direct messages are encrypted in your browser. This PIN protects a
+                backup of your message keys on our server (encrypted with AES-GCM — we
+                cannot read it without your PIN). If you clear browser data or switch
+                devices, enter this PIN in Messages to restore your chat history.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setPinLength(4);
+                setMessagingPin("");
+                setConfirmMessagingPin("");
+              }}
+              className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                pinLength === 4
+                  ? "border-gold-500 bg-gold-500/15 text-gold-300"
+                  : "border-slate-700 text-slate-400 hover:border-slate-600"
+              }`}
+            >
+              4-digit PIN
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPinLength(6);
+                setMessagingPin("");
+                setConfirmMessagingPin("");
+              }}
+              className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                pinLength === 6
+                  ? "border-gold-500 bg-gold-500/15 text-gold-300"
+                  : "border-slate-700 text-slate-400 hover:border-slate-600"
+              }`}
+            >
+              6-digit PIN
+            </button>
+          </div>
+
+          <div>
+            <label className="label-text" htmlFor="messagingPin">
+              Choose PIN ({pinLength} digits)
+            </label>
+            <input
+              id="messagingPin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              className="input-field tracking-[0.3em] text-center"
+              placeholder={"•".repeat(pinLength)}
+              value={messagingPin}
+              onChange={(e) =>
+                setMessagingPin(e.target.value.replace(/\D/g, "").slice(0, pinLength))
+              }
+              required
+              minLength={pinLength}
+              maxLength={pinLength}
+            />
+          </div>
+
+          <div>
+            <label className="label-text" htmlFor="confirmMessagingPin">
+              Confirm PIN
+            </label>
+            <input
+              id="confirmMessagingPin"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              className="input-field tracking-[0.3em] text-center"
+              placeholder={"•".repeat(pinLength)}
+              value={confirmMessagingPin}
+              onChange={(e) =>
+                setConfirmMessagingPin(e.target.value.replace(/\D/g, "").slice(0, pinLength))
+              }
+              required
+              minLength={pinLength}
+              maxLength={pinLength}
             />
           </div>
         </div>

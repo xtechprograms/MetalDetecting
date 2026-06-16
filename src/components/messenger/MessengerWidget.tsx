@@ -17,15 +17,18 @@ import {
   decryptPayload,
   deriveConversationKey,
   ensureUserEncryptionKeys,
-  exportEncryptionKeyBackup,
-  importEncryptionKeyBackup,
+  prepareMessagingKeys,
+  restoreMessagingKeysFromPin,
   restoreMessagingKeysFromPassword,
+  setupMessagingPin,
+  validateMessagingPin,
   encryptAndUploadImage,
   encryptPayload,
   isEncryptedContent,
   parsePublicKeyJwkFromProfile,
   previewFromPayload,
   type UiDirectMessage,
+  type MessagingPinLength,
 } from "@/lib/messengerCrypto";
 import {
   ChevronDown,
@@ -35,6 +38,7 @@ import {
   MessageCircle,
   Minus,
   Send,
+  Shield,
   Smile,
   Trash2,
   X,
@@ -61,8 +65,17 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [showKeysResetNotice, setShowKeysResetNotice] = useState(false);
+  const [restorePin, setRestorePin] = useState("");
   const [restorePassword, setRestorePassword] = useState("");
+  const [restorePinLength, setRestorePinLength] = useState<MessagingPinLength | null>(6);
+  const [legacyPasswordBackup, setLegacyPasswordBackup] = useState(false);
   const [restoringKeys, setRestoringKeys] = useState(false);
+  const [needsPinSetup, setNeedsPinSetup] = useState(false);
+  const [showPinSetupPanel, setShowPinSetupPanel] = useState(false);
+  const [setupPinLength, setSetupPinLength] = useState<MessagingPinLength>(6);
+  const [setupPin, setSetupPin] = useState("");
+  const [confirmSetupPin, setConfirmSetupPin] = useState("");
+  const [settingUpPin, setSettingUpPin] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingHistory, setDeletingHistory] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
@@ -75,7 +88,6 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const didInitRef = useRef(false);
   const presenceRef = useRef<PresenceStatus>("online");
   const keysRegeneratedRef = useRef(false);
-  const keyBackupInputRef = useRef<HTMLInputElement>(null);
   const openRef = useRef(open);
   const activeFriendRef = useRef(activeFriendId);
   const conversationRef = useRef(conversationId);
@@ -651,22 +663,31 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     didInitRef.current = true;
 
     async function init() {
-      const { privateKey, keysRegenerated } = await ensureUserEncryptionKeys(userId, supabase);
-      privateKeyRef.current = privateKey;
+      const prepared = await prepareMessagingKeys(userId, supabase);
+      privateKeyRef.current = prepared.privateKey;
 
-      if (keysRegenerated) {
-        keysRegeneratedRef.current = true;
+      if (prepared.needsPinRestore) {
+        setRestorePinLength(prepared.pinLength);
+        setLegacyPasswordBackup(prepared.legacyPasswordBackup);
         setShowKeysResetNotice(true);
+        conversationKeysRef.current.clear();
+      } else if (prepared.keysRegenerated) {
+        keysRegeneratedRef.current = true;
         conversationKeysRef.current.clear();
       }
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("presence_status")
+        .select("presence_status, messaging_pin_length")
         .eq("id", userId)
         .maybeSingle();
 
       setPresence((profile?.presence_status as PresenceStatus) || "online");
+
+      if (!profile?.messaging_pin_length && prepared.privateKey && !prepared.needsPinRestore) {
+        setNeedsPinSetup(true);
+        setShowPinSetupPanel(true);
+      }
 
       const { error } = await supabase
         .from("profiles")
@@ -863,40 +884,96 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     }
   }, [open, activeFriendId, conversationId, messages.length, scrollToBottom]);
 
-  const downloadKeyBackup = useCallback(() => {
-    const backup = exportEncryptionKeyBackup(userId);
-    if (!backup) {
-      setSendError("No encryption keys found to back up.");
+  const restoreKeysWithPin = useCallback(async () => {
+    if (!restorePin.trim()) return;
+
+    const validation = validateMessagingPin(
+      restorePin,
+      restorePinLength || undefined
+    );
+    if (!validation.valid) {
+      setSendError(validation.error || "Invalid messaging PIN.");
       return;
     }
-    const blob = new Blob([backup], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "treasure-atlas-message-keys.json";
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }, [userId]);
 
-  const restoreKeyBackup = useCallback(
-    async (file: File) => {
-      try {
-        const backup = await file.text();
-        const { privateKey } = await importEncryptionKeyBackup(userId, backup, supabase);
-        privateKeyRef.current = privateKey;
-        keysRegeneratedRef.current = false;
-        setShowKeysResetNotice(false);
-        conversationKeysRef.current.clear();
-        if (conversationId && activeFriendId) {
-          await loadMessages(conversationId, activeFriendId);
-        }
-        await refreshInbox();
-      } catch {
-        setSendError("Invalid key backup file.");
+    setRestoringKeys(true);
+    setSendError(null);
+
+    const restored = await restoreMessagingKeysFromPin(
+      userId,
+      restorePin,
+      supabase,
+      restorePinLength
+    );
+
+    if (!restored) {
+      setSendError("Could not restore keys. Check your messaging PIN and try again.");
+      setRestoringKeys(false);
+      return;
+    }
+
+    privateKeyRef.current = (
+      await ensureUserEncryptionKeys(userId, supabase)
+    ).privateKey;
+    keysRegeneratedRef.current = false;
+    setShowKeysResetNotice(false);
+    setRestorePin("");
+    conversationKeysRef.current.clear();
+
+    if (conversationId && activeFriendId) {
+      await loadMessages(conversationId, activeFriendId);
+    }
+    await refreshInbox();
+    setRestoringKeys(false);
+  }, [
+    restorePin,
+    restorePinLength,
+    userId,
+    supabase,
+    conversationId,
+    activeFriendId,
+    loadMessages,
+    refreshInbox,
+  ]);
+
+  const setupPinForMessaging = useCallback(async () => {
+    const pinValidation = validateMessagingPin(setupPin, setupPinLength);
+    if (!pinValidation.valid) {
+      setSendError(pinValidation.error || "Invalid messaging PIN.");
+      return;
+    }
+
+    if (setupPin !== confirmSetupPin) {
+      setSendError("Messaging PINs do not match.");
+      return;
+    }
+
+    setSettingUpPin(true);
+    setSendError(null);
+
+    try {
+      await setupMessagingPin(userId, setupPin, setupPinLength, supabase);
+
+      if (!privateKeyRef.current) {
+        privateKeyRef.current = (
+          await ensureUserEncryptionKeys(userId, supabase)
+        ).privateKey;
       }
-    },
-    [userId, supabase, conversationId, activeFriendId, loadMessages, refreshInbox]
-  );
+
+      setNeedsPinSetup(false);
+      setShowPinSetupPanel(false);
+      setLegacyPasswordBackup(false);
+      setRestorePinLength(setupPinLength);
+      setSetupPin("");
+      setConfirmSetupPin("");
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : "Could not save messaging PIN."
+      );
+    }
+
+    setSettingUpPin(false);
+  }, [setupPin, confirmSetupPin, setupPinLength, userId, supabase]);
 
   const restoreKeysWithPassword = useCallback(async () => {
     if (!restorePassword.trim()) return;
@@ -922,6 +999,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     keysRegeneratedRef.current = false;
     setShowKeysResetNotice(false);
     setRestorePassword("");
+    setNeedsPinSetup(true);
+    setShowPinSetupPanel(true);
     conversationKeysRef.current.clear();
 
     if (conversationId && activeFriendId) {
@@ -958,6 +1037,17 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {needsPinSetup && !showPinSetupPanel && (
+                <button
+                  type="button"
+                  onClick={() => setShowPinSetupPanel(true)}
+                  className="p-2 rounded-lg hover:bg-gold-500/15 text-gold-400"
+                  aria-label="Set up messaging PIN"
+                  title="Set up messaging PIN"
+                >
+                  <Shield className="w-4 h-4" />
+                </button>
+              )}
               <div className="relative">
                 <select
                   value={presence}
@@ -985,62 +1075,182 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
             </div>
           </div>
 
-          <input
-            ref={keyBackupInputRef}
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void restoreKeyBackup(file);
-              e.target.value = "";
-            }}
-          />
-
-          {showKeysResetNotice && (
-            <div className="px-4 py-3 border-b border-amber-700/40 bg-amber-950/40 text-xs text-amber-100/90">
-              <p>
-                Browser data was cleared on this device. Enter your <strong>login password</strong>{" "}
-                to restore your encrypted message history, or use a saved key backup file.
+          {showPinSetupPanel && needsPinSetup && !showKeysResetNotice && (
+            <div className="px-4 py-3 border-b border-gold-700/40 bg-gold-950/30 text-xs text-gold-100/90">
+              <p className="font-medium text-gold-200">Set up your messaging PIN</p>
+              <p className="mt-1 text-slate-400">
+                Choose a {setupPinLength}-digit PIN to encrypt a backup of your message keys.
+                If you clear browser data or switch devices, enter this PIN in Messages to restore
+                your chat history. Your PIN is never stored on our servers.
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                <input
-                  type="password"
-                  value={restorePassword}
-                  onChange={(e) => setRestorePassword(e.target.value)}
-                  placeholder="Your login password"
-                  className="input-field flex-1 py-2 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void restoreKeysWithPassword();
-                    }
-                  }}
-                />
+              <div className="flex gap-2 mt-2">
                 <button
                   type="button"
-                  onClick={() => void restoreKeysWithPassword()}
-                  disabled={restoringKeys || !restorePassword.trim()}
-                  className="px-3 py-2 rounded-md bg-gold-600 text-slate-950 font-medium hover:bg-gold-500 disabled:opacity-50"
+                  onClick={() => {
+                    setSetupPinLength(4);
+                    setSetupPin("");
+                    setConfirmSetupPin("");
+                  }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
+                    setupPinLength === 4
+                      ? "border-gold-500 bg-gold-500/15 text-gold-300"
+                      : "border-slate-700 text-slate-400"
+                  }`}
                 >
-                  {restoringKeys ? "Restoring..." : "Restore messages"}
+                  4 digits
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSetupPinLength(6);
+                    setSetupPin("");
+                    setConfirmSetupPin("");
+                  }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs border transition-colors ${
+                    setupPinLength === 6
+                      ? "border-gold-500 bg-gold-500/15 text-gold-300"
+                      : "border-slate-700 text-slate-400"
+                  }`}
+                >
+                  6 digits
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  value={setupPin}
+                  onChange={(e) =>
+                    setSetupPin(e.target.value.replace(/\D/g, "").slice(0, setupPinLength))
+                  }
+                  placeholder={`PIN (${setupPinLength} digits)`}
+                  className="input-field py-2 text-sm tracking-[0.2em] text-center"
+                  maxLength={setupPinLength}
+                />
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="off"
+                  value={confirmSetupPin}
+                  onChange={(e) =>
+                    setConfirmSetupPin(
+                      e.target.value.replace(/\D/g, "").slice(0, setupPinLength)
+                    )
+                  }
+                  placeholder="Confirm PIN"
+                  className="input-field py-2 text-sm tracking-[0.2em] text-center"
+                  maxLength={setupPinLength}
+                />
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 <button
                   type="button"
-                  onClick={downloadKeyBackup}
-                  className="px-2.5 py-1 rounded-md bg-amber-900/50 border border-amber-700/50 hover:bg-amber-900/70"
+                  onClick={() => void setupPinForMessaging()}
+                  disabled={
+                    settingUpPin ||
+                    setupPin.length !== setupPinLength ||
+                    confirmSetupPin.length !== setupPinLength
+                  }
+                  className="px-3 py-2 rounded-md bg-gold-600 text-slate-950 font-medium hover:bg-gold-500 disabled:opacity-50"
                 >
-                  Download key file
+                  {settingUpPin ? "Saving..." : "Save messaging PIN"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => keyBackupInputRef.current?.click()}
-                  className="px-2.5 py-1 rounded-md bg-amber-900/50 border border-amber-700/50 hover:bg-amber-900/70"
+                  onClick={() => setShowPinSetupPanel(false)}
+                  disabled={settingUpPin}
+                  className="px-2.5 py-2 rounded-md text-slate-400 hover:text-slate-200"
                 >
-                  Upload key file
+                  Later
                 </button>
+              </div>
+            </div>
+          )}
+
+          {showKeysResetNotice && (
+            <div className="px-4 py-3 border-b border-amber-700/40 bg-amber-950/40 text-xs text-amber-100/90">
+              {legacyPasswordBackup ? (
+                <>
+                  <p>
+                    Browser data was cleared on this device. Enter your{" "}
+                    <strong>login password</strong> to restore your encrypted message history
+                    (legacy backup). New accounts use a messaging PIN instead.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <input
+                      type="password"
+                      value={restorePassword}
+                      onChange={(e) => setRestorePassword(e.target.value)}
+                      placeholder="Your login password"
+                      className="input-field flex-1 py-2 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void restoreKeysWithPassword();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void restoreKeysWithPassword()}
+                      disabled={restoringKeys || !restorePassword.trim()}
+                      className="px-3 py-2 rounded-md bg-gold-600 text-slate-950 font-medium hover:bg-gold-500 disabled:opacity-50"
+                    >
+                      {restoringKeys ? "Restoring..." : "Restore messages"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>
+                    Browser data was cleared on this device. Enter your{" "}
+                    <strong>{restorePinLength || 6}-digit messaging PIN</strong> to restore your
+                    encrypted message history.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      value={restorePin}
+                      onChange={(e) =>
+                        setRestorePin(
+                          e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, restorePinLength || 6)
+                        )
+                      }
+                      placeholder={restorePinLength ? "•".repeat(restorePinLength) : "PIN"}
+                      className="input-field flex-1 py-2 text-sm tracking-[0.25em] text-center"
+                      maxLength={restorePinLength || 6}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void restoreKeysWithPin();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void restoreKeysWithPin()}
+                      disabled={
+                        restoringKeys ||
+                        (restorePinLength
+                          ? restorePin.length !== restorePinLength
+                          : restorePin.length !== 4 && restorePin.length !== 6)
+                      }
+                      className="px-3 py-2 rounded-md bg-gold-600 text-slate-950 font-medium hover:bg-gold-500 disabled:opacity-50"
+                    >
+                      {restoringKeys ? "Restoring..." : "Restore messages"}
+                    </button>
+                  </div>
+                </>
+              )}
+              <div className="flex flex-wrap gap-2 mt-2">
                 <button
                   type="button"
                   onClick={() => setShowKeysResetNotice(false)}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { syncMessagingKeysFromPassword } from "@/lib/messengerCrypto";
+import { applyPendingMessagingPin } from "@/lib/messengerCrypto";
 import { Compass, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }) {
@@ -33,9 +33,9 @@ export function LoginForm({ redirectTo = "/dashboard" }: { redirectTo?: string }
 
     if (data.user) {
       try {
-        await syncMessagingKeysFromPassword(data.user.id, password, supabase);
+        await applyPendingMessagingPin(data.user.id, supabase);
       } catch {
-        // Login still succeeds; messenger can prompt for password restore if needed.
+        // Pending PIN setup can be completed in Messages after email confirmation.
       }
     }
 

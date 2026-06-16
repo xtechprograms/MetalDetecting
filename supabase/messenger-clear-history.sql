@@ -1,4 +1,4 @@
--- Treasure Atlas | Migration 16 of 17: messenger-clear-history.sql
+-- Treasure Atlas | Migration 16 of 18: messenger-clear-history.sql
 -- Prerequisites: messenger.sql (step 11)
 -- Purpose: RPC clear_dm_conversation — permanently delete a DM thread for both friends
 --

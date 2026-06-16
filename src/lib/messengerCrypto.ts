@@ -8,9 +8,32 @@ const HKDF_INFO = "treasure-atlas-dm-v1";
 const PBKDF2_ITERATIONS = 210_000;
 
 export const LOST_KEYS_MESSAGE =
-  "🔒 Message encrypted with older keys. Sign in again with your password to restore, or use a key backup file.";
+  "🔒 Message encrypted with older keys. Enter your messaging PIN to restore your chat history.";
 
 export const UNABLE_DECRYPT_MESSAGE = "🔒 Unable to decrypt this message";
+
+export type MessagingPinLength = 4 | 6;
+
+export function validateMessagingPin(
+  pin: string,
+  expectedLength?: MessagingPinLength
+): { valid: boolean; error?: string } {
+  if (!/^\d+$/.test(pin)) {
+    return { valid: false, error: "PIN must contain numbers only." };
+  }
+
+  if (pin.length !== 4 && pin.length !== 6) {
+    return { valid: false, error: "PIN must be 4 or 6 digits." };
+  }
+
+  if (expectedLength && pin.length !== expectedLength) {
+    return { valid: false, error: `PIN must be exactly ${expectedLength} digits.` };
+  }
+
+  return { valid: true };
+}
+
+export const PENDING_MESSAGING_PIN_KEY = "ta-pending-messaging-pin";
 
 type StoredKeyPair = {
   privateJwk: JsonWebKey;
@@ -109,13 +132,13 @@ function randomSalt(): Uint8Array<ArrayBuffer> {
   return salt;
 }
 
-async function derivePasswordKey(
-  password: string,
+async function deriveBackupKey(
+  secret: string,
   salt: Uint8Array<ArrayBuffer>
 ): Promise<CryptoKey> {
-  const passwordKey = await crypto.subtle.importKey(
+  const secretKey = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(password),
+    new TextEncoder().encode(secret),
     "PBKDF2",
     false,
     ["deriveKey"]
@@ -128,7 +151,7 @@ async function derivePasswordKey(
       iterations: PBKDF2_ITERATIONS,
       hash: "SHA-256",
     },
-    passwordKey,
+    secretKey,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"]
@@ -137,11 +160,11 @@ async function derivePasswordKey(
 
 async function wrapMessagingKeys(
   payload: StoredKeyPair,
-  password: string
+  secret: string
 ): Promise<string> {
   const salt = randomSalt();
   const iv = randomIv();
-  const key = await derivePasswordKey(password, salt);
+  const key = await deriveBackupKey(secret, salt);
   const encoded = new TextEncoder().encode(JSON.stringify(payload));
   const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
 
@@ -157,7 +180,7 @@ async function wrapMessagingKeys(
 
 async function unwrapMessagingKeys(
   envelopeJson: string,
-  password: string
+  secret: string
 ): Promise<StoredKeyPair | null> {
   try {
     const envelope = JSON.parse(envelopeJson) as KeyBackupEnvelope;
@@ -166,7 +189,7 @@ async function unwrapMessagingKeys(
     const salt = base64ToBytes(envelope.salt);
     const iv = base64ToBytes(envelope.iv);
     const ciphertext = base64ToBytes(envelope.ct);
-    const key = await derivePasswordKey(password, salt);
+    const key = await deriveBackupKey(secret, salt);
     const decrypted = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv },
       key,
@@ -190,29 +213,30 @@ async function persistPublicKey(
     .eq("id", userId);
 }
 
-export async function syncMessagingKeysFromPassword(
+export async function syncMessagingKeysFromPin(
   userId: string,
-  password: string,
+  pin: string,
+  pinLength: MessagingPinLength,
   supabase: SupabaseClient
 ): Promise<{ restored: boolean; keysRegenerated: boolean }> {
+  const validation = validateMessagingPin(pin, pinLength);
+  if (!validation.valid) {
+    throw new Error(validation.error || "Invalid messaging PIN.");
+  }
+
   const storageKey = `${LOCAL_KEY_PREFIX}${userId}`;
   const stored = localStorage.getItem(storageKey);
 
   if (stored) {
     const parsed = JSON.parse(stored) as StoredKeyPair;
-    const { data: profile } = await supabase
+    const wrapped = await wrapMessagingKeys(parsed, pin);
+    await supabase
       .from("profiles")
-      .select("encrypted_messaging_key")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (!profile?.encrypted_messaging_key) {
-      const wrapped = await wrapMessagingKeys(parsed, password);
-      await supabase
-        .from("profiles")
-        .update({ encrypted_messaging_key: wrapped })
-        .eq("id", userId);
-    }
+      .update({
+        encrypted_messaging_key: wrapped,
+        messaging_pin_length: pinLength,
+      })
+      .eq("id", userId);
 
     await persistPublicKey(supabase, userId, parsed.publicJwk);
     return { restored: false, keysRegenerated: false };
@@ -220,17 +244,21 @@ export async function syncMessagingKeysFromPassword(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("encrypted_messaging_key")
+    .select("encrypted_messaging_key, messaging_pin_length")
     .eq("id", userId)
     .maybeSingle();
 
   if (profile?.encrypted_messaging_key) {
-    const payload = await unwrapMessagingKeys(profile.encrypted_messaging_key, password);
+    const payload = await unwrapMessagingKeys(profile.encrypted_messaging_key, pin);
     if (!payload) {
-      throw new Error("Could not unlock encrypted messages with this password.");
+      throw new Error("Could not unlock encrypted messages with this PIN.");
     }
 
     localStorage.setItem(storageKey, JSON.stringify(payload));
+    await supabase
+      .from("profiles")
+      .update({ messaging_pin_length: pinLength })
+      .eq("id", userId);
     await persistPublicKey(supabase, userId, payload.publicJwk);
     return { restored: true, keysRegenerated: false };
   }
@@ -242,20 +270,75 @@ export async function syncMessagingKeysFromPassword(
   }
 
   const parsed = JSON.parse(newStored) as StoredKeyPair;
-  const wrapped = await wrapMessagingKeys(parsed, password);
+  const wrapped = await wrapMessagingKeys(parsed, pin);
   await supabase
     .from("profiles")
-    .update({ encrypted_messaging_key: wrapped })
+    .update({
+      encrypted_messaging_key: wrapped,
+      messaging_pin_length: pinLength,
+    })
     .eq("id", userId);
 
   return { restored: false, keysRegenerated };
 }
 
-export async function restoreMessagingKeysFromPassword(
+export async function setupMessagingPin(
   userId: string,
-  password: string,
+  pin: string,
+  pinLength: MessagingPinLength,
   supabase: SupabaseClient
+): Promise<void> {
+  const validation = validateMessagingPin(pin, pinLength);
+  if (!validation.valid) {
+    throw new Error(validation.error || "Invalid messaging PIN.");
+  }
+
+  const storageKey = `${LOCAL_KEY_PREFIX}${userId}`;
+  let stored = localStorage.getItem(storageKey);
+
+  if (!stored) {
+    const { privateKey } = await ensureUserEncryptionKeys(userId, supabase);
+    if (!privateKey) {
+      throw new Error("Could not access message encryption keys on this device.");
+    }
+    stored = localStorage.getItem(storageKey);
+  }
+
+  if (!stored) {
+    throw new Error("Could not access message encryption keys on this device.");
+  }
+
+  const parsed = JSON.parse(stored) as StoredKeyPair;
+  const wrapped = await wrapMessagingKeys(parsed, pin);
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      encrypted_messaging_key: wrapped,
+      messaging_pin_length: pinLength,
+    })
+    .eq("id", userId);
+
+  if (error) {
+    throw new Error("Could not save messaging PIN backup.");
+  }
+
+  await persistPublicKey(supabase, userId, parsed.publicJwk);
+}
+
+export async function restoreMessagingKeysFromPin(
+  userId: string,
+  pin: string,
+  supabase: SupabaseClient,
+  expectedLength?: MessagingPinLength | null
 ): Promise<boolean> {
+  if (expectedLength) {
+    const validation = validateMessagingPin(pin, expectedLength);
+    if (!validation.valid) return false;
+  } else {
+    const validation = validateMessagingPin(pin);
+    if (!validation.valid) return false;
+  }
+
   const storageKey = `${LOCAL_KEY_PREFIX}${userId}`;
 
   const { data: profile } = await supabase
@@ -266,12 +349,109 @@ export async function restoreMessagingKeysFromPassword(
 
   if (!profile?.encrypted_messaging_key) return false;
 
+  const payload = await unwrapMessagingKeys(profile.encrypted_messaging_key, pin);
+  if (!payload) return false;
+
+  localStorage.setItem(storageKey, JSON.stringify(payload));
+  await persistPublicKey(supabase, userId, payload.publicJwk);
+  return true;
+}
+
+/** Legacy accounts may still have login-password-wrapped backups. */
+export async function restoreMessagingKeysFromPassword(
+  userId: string,
+  password: string,
+  supabase: SupabaseClient
+): Promise<boolean> {
+  const storageKey = `${LOCAL_KEY_PREFIX}${userId}`;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("encrypted_messaging_key, messaging_pin_length")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!profile?.encrypted_messaging_key || profile.messaging_pin_length) return false;
+
   const payload = await unwrapMessagingKeys(profile.encrypted_messaging_key, password);
   if (!payload) return false;
 
   localStorage.setItem(storageKey, JSON.stringify(payload));
   await persistPublicKey(supabase, userId, payload.publicJwk);
   return true;
+}
+
+export async function prepareMessagingKeys(
+  userId: string,
+  supabase: SupabaseClient
+): Promise<{
+  privateKey: CryptoKey | null;
+  needsPinRestore: boolean;
+  keysRegenerated: boolean;
+  pinLength: MessagingPinLength | null;
+  legacyPasswordBackup: boolean;
+}> {
+  const storageKey = `${LOCAL_KEY_PREFIX}${userId}`;
+  const stored = localStorage.getItem(storageKey);
+
+  if (stored) {
+    const parsed = JSON.parse(stored) as StoredKeyPair;
+    const privateKey = await importPrivateKey(parsed.privateJwk);
+    await persistPublicKey(supabase, userId, parsed.publicJwk);
+    return {
+      privateKey,
+      needsPinRestore: false,
+      keysRegenerated: false,
+      pinLength: null,
+      legacyPasswordBackup: false,
+    };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("encrypted_messaging_key, messaging_pin_length")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profile?.encrypted_messaging_key) {
+    const pinLength = profile.messaging_pin_length as MessagingPinLength | null;
+    return {
+      privateKey: null,
+      needsPinRestore: true,
+      keysRegenerated: false,
+      pinLength,
+      legacyPasswordBackup: !pinLength,
+    };
+  }
+
+  const { privateKey, keysRegenerated } = await ensureUserEncryptionKeys(userId, supabase);
+  return {
+    privateKey,
+    needsPinRestore: false,
+    keysRegenerated,
+    pinLength: null,
+    legacyPasswordBackup: false,
+  };
+}
+
+export async function applyPendingMessagingPin(
+  userId: string,
+  supabase: SupabaseClient
+): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  const raw = sessionStorage.getItem(PENDING_MESSAGING_PIN_KEY);
+  if (!raw) return false;
+
+  try {
+    const pending = JSON.parse(raw) as { pin: string; length: MessagingPinLength };
+    await syncMessagingKeysFromPin(userId, pending.pin, pending.length, supabase);
+    sessionStorage.removeItem(PENDING_MESSAGING_PIN_KEY);
+    return true;
+  } catch {
+    sessionStorage.removeItem(PENDING_MESSAGING_PIN_KEY);
+    return false;
+  }
 }
 
 export async function ensureUserEncryptionKeys(
@@ -314,21 +494,6 @@ export async function ensureUserEncryptionKeys(
   await persistPublicKey(supabase, userId, publicJwk);
 
   return { privateKey, publicJwk, keysRegenerated };
-}
-
-export function exportEncryptionKeyBackup(userId: string): string | null {
-  return localStorage.getItem(`${LOCAL_KEY_PREFIX}${userId}`);
-}
-
-export async function importEncryptionKeyBackup(
-  userId: string,
-  backupJson: string,
-  supabase: SupabaseClient
-): Promise<{ privateKey: CryptoKey; publicJwk: JsonWebKey }> {
-  JSON.parse(backupJson);
-  localStorage.setItem(`${LOCAL_KEY_PREFIX}${userId}`, backupJson);
-  const { privateKey, publicJwk } = await ensureUserEncryptionKeys(userId, supabase);
-  return { privateKey, publicJwk };
 }
 
 export async function deriveConversationKey(
