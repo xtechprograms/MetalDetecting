@@ -30,9 +30,15 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function base64ToBytes(value: string): Uint8Array {
+function randomIv(): Uint8Array<ArrayBuffer> {
+  const iv = new Uint8Array(new ArrayBuffer(12));
+  crypto.getRandomValues(iv);
+  return iv;
+}
+
+function base64ToBytes(value: string): Uint8Array<ArrayBuffer> {
   const binary = atob(value);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
   }
@@ -159,7 +165,7 @@ export async function encryptPayload(
   conversationKey: CryptoKey,
   payload: DecryptedMessagePayload
 ): Promise<string> {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = randomIv();
   const encoded = new TextEncoder().encode(JSON.stringify(payload));
   const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, conversationKey, encoded);
 
@@ -199,7 +205,7 @@ export async function encryptBinary(
   conversationKey: CryptoKey,
   data: ArrayBuffer
 ): Promise<{ iv: string; ciphertext: ArrayBuffer }> {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = randomIv();
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     conversationKey,
