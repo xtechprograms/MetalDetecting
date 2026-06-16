@@ -46,7 +46,7 @@ export default async function MapPage() {
         </div>
       </div>
 
-      <DetectingMap finds={finds} size="lg" zoom={2} />
+      <DetectingMap finds={finds} size="lg" zoom={2} legend={["find"]} />
 
       {finds.length === 0 && (
         <div className="glass-card p-8 mt-6 text-center">

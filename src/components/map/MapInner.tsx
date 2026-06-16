@@ -10,53 +10,10 @@ import {
   useMapEvents,
   useMap,
 } from "react-leaflet";
-import L from "leaflet";
 import type { Find } from "@/types/database";
 import { FIND_CATEGORIES, formatCoordinates, formatDate } from "@/lib/utils";
+import { findPinIcon, historyIcon, selectedIcon } from "./mapMarkers";
 import Link from "next/link";
-
-const goldIcon = new L.DivIcon({
-  className: "custom-marker",
-  html: `<div style="
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, #d4a017, #cd7f32);
-    border: 3px solid #fef3c7;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    box-shadow: 0 4px 12px rgba(212,160,23,0.5);
-  "></div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -32],
-});
-
-const selectedIcon = new L.DivIcon({
-  className: "custom-marker-selected",
-  html: `<div style="
-    width: 24px; height: 24px;
-    background: #22c55e;
-    border: 3px solid #fff;
-    border-radius: 50%;
-    box-shadow: 0 0 20px rgba(34,197,94,0.6);
-  "></div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
-
-const historyIcon = new L.DivIcon({
-  className: "custom-marker-history",
-  html: `<div style="
-    width: 20px; height: 20px;
-    background: #d4a017;
-    border: 2px solid #fef3c7;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(212,160,23,0.5);
-  "></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-  popupAnchor: [0, -10],
-});
-
 function MapClickHandler({
   onLocationSelect,
 }: {
@@ -181,7 +138,7 @@ export default function MapInner({
           <Marker
             key={find.id}
             position={[find.latitude!, find.longitude!]}
-            icon={goldIcon}
+            icon={findPinIcon}
           >
             <Popup>
               <div className="min-w-0 max-w-[240px] sm:max-w-[280px]">

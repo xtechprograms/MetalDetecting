@@ -20,9 +20,14 @@ export type Profile = {
   forum_moderation_reason: string | null;
   forum_moderated_by: string | null;
   forum_moderated_at: string | null;
+  presence_status: PresenceStatus;
+  last_seen_at: string | null;
+  encryption_public_key: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export type PresenceStatus = "online" | "busy" | "offline";
 
 export type ForumCategory = {
   id: string;
@@ -150,6 +155,35 @@ export type Notification = {
   actor?: Pick<Profile, "username" | "display_name" | "avatar_url">;
 };
 
+export type DirectConversation = {
+  id: string;
+  user_one_id: string;
+  user_two_id: string;
+  last_message_at: string | null;
+  created_at: string;
+};
+
+export type DirectMessage = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  image_url: string | null;
+  is_encrypted: boolean;
+  created_at: string;
+  sender?: Pick<Profile, "username" | "display_name" | "avatar_url">;
+};
+
+export type MessengerFriend = Pick<
+  Profile,
+  "id" | "username" | "display_name" | "avatar_url" | "presence_status" | "encryption_public_key"
+> & {
+  conversationId?: string;
+  lastMessage?: string;
+  lastMessageAt?: string | null;
+  unreadCount?: number;
+};
+
 export type ResearchBookmark = {
   id: string;
   user_id: string;
@@ -179,6 +213,7 @@ export type GeocodedLocation = {
   placeName: string;
   country: string;
   postalCode?: string;
+  region?: string;
 };
 
 export type NearbyHistorySite = {

@@ -40,7 +40,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sites = await fetchNearbyHistorySites(center.lat, center.lng, radiusKm);
+    const sites = await fetchNearbyHistorySites(center.lat, center.lng, radiusKm, 20, {
+      placeName: center.placeName,
+      region: center.region,
+      country: center.country,
+    });
 
     const result: NearbyHistoryResult = {
       center,

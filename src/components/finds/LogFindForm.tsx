@@ -366,6 +366,7 @@ export function LogFindForm() {
               ? { lat: latitude, lng: longitude }
               : null
           }
+          legend={["selected", "find"]}
         />
 
         {/* Show on map — default on, independent of anonymity */}

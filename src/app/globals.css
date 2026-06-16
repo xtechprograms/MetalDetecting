@@ -147,3 +147,10 @@
 .leaflet-popup-tip {
   @apply bg-slate-900;
 }
+
+.find-pin-marker,
+.custom-marker-history,
+.custom-marker-selected {
+  background: transparent !important;
+  border: none !important;
+}

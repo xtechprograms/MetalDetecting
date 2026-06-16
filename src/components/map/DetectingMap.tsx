@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Find } from "@/types/database";
 import { Loader2 } from "lucide-react";
-
+import { MapLegend } from "./MapLegend";
+import { resolveLegendKeys, type MapLegendKey } from "./mapMarkers";
 const MapInner = dynamic(() => import("./MapInner"), {
   ssr: false,
   loading: () => (
@@ -33,6 +34,7 @@ type MapProps = {
   radiusKm?: number | null;
   historyMarkers?: { id: string; lat: number; lng: number; title: string; label?: string }[];
   onHistoryMarkerClick?: (id: string) => void;
+  legend?: MapLegendKey[] | "auto";
 };
 
 export function DetectingMap({
@@ -46,9 +48,21 @@ export function DetectingMap({
   radiusKm = null,
   historyMarkers = [],
   onHistoryMarkerClick,
+  legend = "auto",
 }: MapProps) {
   const [mounted, setMounted] = useState(false);
   const heightClass = MAP_SIZE_CLASSES[size];
+
+  const hasFinds = finds.some(
+    (find) => find.show_on_map && find.latitude != null && find.longitude != null
+  );
+  const legendItems = resolveLegendKeys({
+    legend,
+    hasFinds,
+    hasHistory: historyMarkers.length > 0,
+    hasRadius: radiusKm != null && radiusKm > 0,
+    selectable,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -65,20 +79,23 @@ export function DetectingMap({
   }
 
   return (
-    <div
-      className={`relative w-full rounded-xl overflow-hidden border border-slate-700/50 shadow-2xl shadow-black/40 ${heightClass}`}
-    >
-      <MapInner
-        finds={finds}
-        center={center}
-        zoom={zoom}
-        onLocationSelect={onLocationSelect}
-        selectable={selectable}
-        selectedLocation={selectedLocation}
-        radiusKm={radiusKm}
-        historyMarkers={historyMarkers}
-        onHistoryMarkerClick={onHistoryMarkerClick}
-      />
+    <div className="w-full">
+      <div
+        className={`relative w-full rounded-xl overflow-hidden border border-slate-700/50 shadow-2xl shadow-black/40 ${heightClass}`}
+      >
+        <MapInner
+          finds={finds}
+          center={center}
+          zoom={zoom}
+          onLocationSelect={onLocationSelect}
+          selectable={selectable}
+          selectedLocation={selectedLocation}
+          radiusKm={radiusKm}
+          historyMarkers={historyMarkers}
+          onHistoryMarkerClick={onHistoryMarkerClick}
+        />
+      </div>
+      <MapLegend items={legendItems} />
     </div>
   );
 }

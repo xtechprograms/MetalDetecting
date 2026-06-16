@@ -3,6 +3,7 @@ import { Cinzel, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { MessengerRoot } from "@/components/messenger/MessengerRoot";
 
 const display = Cinzel({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({
         <Navbar />
         <main className="relative flex-1 min-w-0 overflow-x-hidden">{children}</main>
         <Footer />
+        <MessengerRoot />
       </body>
     </html>
   );
