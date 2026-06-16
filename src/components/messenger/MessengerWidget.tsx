@@ -63,6 +63,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const privateKeyRef = useRef<CryptoKey | null>(null);
   const conversationKeysRef = useRef<Map<string, CryptoKey>>(new Map());
   const blobUrlsRef = useRef<string[]>([]);
+  const didInitRef = useRef(false);
+  const presenceRef = useRef<PresenceStatus>("online");
   const openRef = useRef(open);
   const activeFriendRef = useRef(activeFriendId);
   const conversationRef = useRef(conversationId);
@@ -72,6 +74,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   activeFriendRef.current = activeFriendId;
   conversationRef.current = conversationId;
   messagesRef.current = messages;
+  presenceRef.current = presence;
 
   const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
 
@@ -289,7 +292,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   }, [supabase, userId]);
 
   const markConversationRead = useCallback(
-    async (convId: string) => {
+    async (convId: string, skipInboxRefresh = false) => {
       await supabase.from("dm_read_state").upsert(
         {
           conversation_id: convId,
@@ -299,7 +302,9 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         { onConflict: "conversation_id,user_id" }
       );
 
-      await refreshInbox();
+      if (!skipInboxRefresh) {
+        await refreshInbox();
+      }
     },
     [supabase, userId, refreshInbox]
   );
@@ -476,30 +481,83 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
 
   const updatePresence = useCallback(
     async (status: PresenceStatus) => {
+      const previous = presenceRef.current;
       setPresence(status);
-      await supabase
+
+      const { error } = await supabase
         .from("profiles")
         .update({
           presence_status: status,
           last_seen_at: new Date().toISOString(),
         })
         .eq("id", userId);
+
+      if (error) {
+        setPresence(previous);
+        setSendError("Could not update your status. Please try again.");
+      }
     },
     [supabase, userId]
   );
 
+  const refreshInboxRef = useRef(refreshInbox);
+  const markConversationReadRef = useRef(markConversationRead);
+  const resolveConversationKeyRef = useRef(resolveConversationKey);
+  const redecryptVisibleMessagesRef = useRef(redecryptVisibleMessages);
+  const scrollToBottomRef = useRef(scrollToBottom);
+  const loadMessagesRef = useRef(loadMessages);
+  const refreshInboxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  refreshInboxRef.current = refreshInbox;
+  markConversationReadRef.current = markConversationRead;
+  resolveConversationKeyRef.current = resolveConversationKey;
+  redecryptVisibleMessagesRef.current = redecryptVisibleMessages;
+  scrollToBottomRef.current = scrollToBottom;
+  loadMessagesRef.current = loadMessages;
+
+  const scheduleRefreshInbox = useCallback(() => {
+    if (refreshInboxTimerRef.current) {
+      clearTimeout(refreshInboxTimerRef.current);
+    }
+    refreshInboxTimerRef.current = setTimeout(() => {
+      void refreshInboxRef.current();
+    }, 300);
+  }, []);
+
   useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+
     async function init() {
       const { privateKey } = await ensureUserEncryptionKeys(userId, supabase);
       privateKeyRef.current = privateKey;
 
-      await updatePresence("online");
-      await refreshInbox();
-      await redecryptVisibleMessages();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("presence_status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      setPresence((profile?.presence_status as PresenceStatus) || "online");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          presence_status: "online",
+          last_seen_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (!error) {
+        setPresence("online");
+      }
+
+      await refreshInboxRef.current();
+      await redecryptVisibleMessagesRef.current();
     }
 
-    init();
-  }, [supabase, userId, refreshInbox, updatePresence, redecryptVisibleMessages]);
+    void init();
+  }, [supabase, userId]);
 
   useEffect(() => {
     return () => {
@@ -516,36 +574,54 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         async (payload) => {
           const message = payload.new as UiDirectMessage;
           const isMine = message.sender_id === userId;
-          const isActiveConversation = message.conversation_id === conversationRef.current;
+          const friendId = activeFriendRef.current;
+          const convId = conversationRef.current;
+          const panelOpen = openRef.current;
 
-          if (isActiveConversation && openRef.current && activeFriendRef.current) {
-            const conversationKey = await resolveConversationKey(
+          const isForActiveFriend = !!friendId && message.sender_id === friendId;
+          const isForActiveConversation =
+            !!convId && message.conversation_id === convId;
+          const shouldAppendToChat =
+            panelOpen &&
+            !!friendId &&
+            (isForActiveFriend || (isMine && isForActiveConversation));
+
+          if (shouldAppendToChat) {
+            if (convId !== message.conversation_id) {
+              setConversationId(message.conversation_id);
+              conversationRef.current = message.conversation_id;
+            }
+
+            const conversationKey = await resolveConversationKeyRef.current(
               message.conversation_id,
-              activeFriendRef.current
+              friendId
             );
             const uiMessage = await decryptDirectMessage(message, conversationKey, supabase);
             if (uiMessage.decryptedImageUrl) {
               blobUrlsRef.current.push(uiMessage.decryptedImageUrl);
             }
+
             setMessages((prev) =>
               prev.some((item) => item.id === uiMessage.id) ? prev : [...prev, uiMessage]
             );
+
             if (
               message.is_encrypted &&
-              (!conversationKey ||
-                uiMessage.decryptedText === "🔒 Encrypted message")
+              (!conversationKey || uiMessage.decryptedText === "🔒 Encrypted message")
             ) {
-              setTimeout(() => void redecryptVisibleMessages(), 400);
+              setTimeout(() => void redecryptVisibleMessagesRef.current(), 400);
             }
+
+            setTimeout(() => scrollToBottomRef.current(), 50);
+
             if (!isMine) {
-              await markConversationRead(message.conversation_id);
+              await markConversationReadRef.current(message.conversation_id, true);
             }
-            setTimeout(scrollToBottom, 50);
           } else if (!isMine) {
             playMessageSound();
           }
 
-          await refreshInbox();
+          scheduleRefreshInbox();
         }
       )
       .on(
@@ -558,7 +634,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
             status?: string;
           };
           if (row.requester_id !== userId && row.addressee_id !== userId) return;
-          await refreshInbox();
+          scheduleRefreshInbox();
         }
       )
       .on(
@@ -567,7 +643,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         async (payload) => {
           const row = payload.old as { requester_id?: string; addressee_id?: string };
           if (row.requester_id !== userId && row.addressee_id !== userId) return;
-          await refreshInbox();
+          scheduleRefreshInbox();
         }
       )
       .on(
@@ -575,6 +651,11 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         { event: "UPDATE", schema: "public", table: "profiles" },
         (payload) => {
           const updated = payload.new as { id: string; presence_status?: PresenceStatus };
+          if (updated.id === userId && updated.presence_status) {
+            setPresence(updated.presence_status);
+            return;
+          }
+
           setFriends((prev) =>
             prev.map((friend) =>
               friend.id === updated.id
@@ -590,9 +671,22 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       .subscribe();
 
     return () => {
+      if (refreshInboxTimerRef.current) {
+        clearTimeout(refreshInboxTimerRef.current);
+      }
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId, refreshInbox, markConversationRead, scrollToBottom, resolveConversationKey, redecryptVisibleMessages]);
+  }, [supabase, userId, scheduleRefreshInbox]);
+
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    const justOpened = open && !prevOpenRef.current;
+    prevOpenRef.current = open;
+
+    if (justOpened && activeFriendId && conversationId) {
+      void loadMessagesRef.current(conversationId, activeFriendId);
+    }
+  }, [open, activeFriendId, conversationId]);
 
   useEffect(() => {
     function handleFriendsChanged() {
