@@ -107,6 +107,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   presenceRef.current = presence;
   replyingToRef.current = replyingTo;
 
+  const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
+
   const replyAuthorName = useCallback(
     (senderId: string) => {
       if (senderId === userId) return "You";
@@ -114,8 +116,6 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     },
     [userId, activeFriend?.display_name]
   );
-
-  const activeFriend = friends.find((friend) => friend.id === activeFriendId) || null;
 
   const getDecryptOptions = useCallback(
     () => ({ keysRegenerated: keysRegeneratedRef.current }),
