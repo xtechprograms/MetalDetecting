@@ -46,15 +46,15 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 - **Default online** — Users appear online when they open the app; status can be set to busy or offline
 - **Live friends list** — Refreshes when you open Messages, accept a friend, or when friendships change (Supabase Realtime)
 - **End-to-end encryption** — Messages and shared photos are encrypted in the browser before storage (ECDH P-256 + AES-GCM)
-- **Password-protected key backup** — Your message keys are backed up to your profile, encrypted with your login password, so history can be restored after clearing browser data (sign in again)
-- **Private keys stay local** — Keys load from backup at login; the server only stores ciphertext it cannot read without your password
+- **PIN-protected key backup** — At signup, choose a 4- or 6-digit messaging PIN. Existing users can set one anytime in Messages. Your message keys are backed up encrypted (PBKDF2 + AES-GCM) so you can restore chats after clearing browser data
+- **Private keys stay local** — Keys load on device; the server only stores ciphertext it cannot read without your PIN
 - **Encrypted attachments** — Photo uploads are encrypted client-side; the storage bucket is private (no public URLs)
 - **Plaintext fallback** — Text still sends if a friend has not opened Messages yet; encryption activates once both have keys
 - **Realtime delivery** — New messages arrive instantly with notification sound and unread badge on the launcher
 - **Emoji & photos** — Quick emoji picker and image sharing in conversations
 - **Delete chat history** — Permanently clear all messages with a friend (removes the thread for both users)
 
-> **Encryption note:** Message keys are wrapped with your **login password** and backed up automatically when you sign in. If you clear browser data, sign in again with the same password to restore encrypted chats. Optional key file backup is also available in Messages. If you change your password, sign in once to refresh the backup. Metadata (who chatted, when) is still visible to the server.
+> **Encryption note:** At signup you set a **messaging PIN** (4 or 6 digits). Existing accounts can set a PIN in **Messages** (shield icon) if they have not already. Your message keys are wrapped with that PIN using PBKDF2 + AES-GCM before being stored on the server — we never store the PIN itself. If you clear browser data, open Messages and enter your PIN to restore encrypted chats. Metadata (who chatted, when) is still visible to the server.
 
 ### Forum
 
@@ -125,9 +125,10 @@ npm install
 | 12 | `supabase/messenger-encryption.sql` | E2EE public keys, encrypted messages, private image bucket |
 | 13 | `supabase/messenger-presence-default.sql` | Default presence to **online** for all users |
 | 14 | `supabase/messenger-friends-realtime.sql` | Realtime when friendships change (live friends list) |
-| 15 | `supabase/messenger-key-backup.sql` | Password-wrapped messaging key backup on profile |
+| 15 | `supabase/messenger-key-backup.sql` | Encrypted messaging key backup column (+ PIN length on fresh installs) |
 | 16 | `supabase/messenger-clear-history.sql` | RPC `clear_dm_conversation` — delete chat with a friend (both sides) |
 | 17 | `supabase/notifications-clear-history.sql` | RPC `clear_notification_history` — delete all your notifications |
+| 18 | `supabase/messenger-pin-backup.sql` | Messaging PIN length column (run if you already ran step 15 before PIN support) |
 
 #### Optional / troubleshooting SQL
 
@@ -136,7 +137,7 @@ npm install
 | `supabase/fix-signup-500.sql` | Signup returns HTTP 500 |
 | `supabase/set-admin.sql` | Promote your account to admin (edit username in file first) |
 
-#### Verify optional features (after steps 16–17)
+#### Verify optional features (after steps 16–18)
 
 ```sql
 -- Messenger: delete chat history
@@ -148,6 +149,12 @@ WHERE n.nspname = 'public' AND proname = 'clear_dm_conversation';
 SELECT proname FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public' AND proname = 'clear_notification_history';
+
+-- Messaging PIN backup (step 15 or 18)
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'profiles'
+  AND column_name = 'messaging_pin_length';
 ```
 
 Each query should return **one row**. If clear notifications fails in the app but SQL succeeded, redeploy the latest app code (the UI calls these RPCs, not direct table deletes).
@@ -239,7 +246,7 @@ src/
 │   ├── messengerCrypto.ts  # E2EE key exchange and message crypto
 │   └── …                   # Supabase clients, geo, research, permissions
 └── types/                  # TypeScript types
-supabase/                   # SQL migrations (run 1–17 in order — see above)
+supabase/                   # SQL migrations (run 1–18 in order — see above)
 ```
 
 ## Responsible Detecting

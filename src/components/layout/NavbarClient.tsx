@@ -132,7 +132,7 @@ export function NavbarClient({
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] glass-card p-2 z-[100] animate-fade-in shadow-xl"
+                  className="absolute right-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] bg-slate-900 border border-slate-700/50 rounded-2xl p-2 z-[100] animate-fade-in shadow-xl"
                 >
                     <div className="px-3 py-2 border-b border-slate-700/50 mb-2">
                       <p className="font-semibold text-sm truncate">{profile?.display_name}</p>

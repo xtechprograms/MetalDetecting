@@ -174,11 +174,11 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))] glass-card p-2 z-[100] animate-fade-in shadow-xl"
+          className="fixed left-2 right-2 top-[calc(4rem+0.5rem)] z-[100] flex max-h-[calc(100dvh-5.5rem)] flex-col animate-fade-in rounded-2xl border border-slate-700/50 bg-slate-900 p-2 shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:max-h-none sm:w-[min(22rem,calc(100vw-2rem))]"
         >
-          <div className="flex items-center justify-between px-2 py-2 border-b border-slate-700/50 mb-2">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-slate-700/50 px-2 py-2 mb-2">
             <p className="font-semibold text-sm">Notifications</p>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1">
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -214,7 +214,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           </div>
 
           {showClearConfirm && notifications.length > 0 && (
-            <div className="mx-2 mb-2 px-3 py-2 rounded-xl border border-red-900/40 bg-red-950/30">
+            <div className="mx-2 mb-2 shrink-0 px-3 py-2 rounded-xl border border-red-900/40 bg-red-950/30">
               <p className="text-xs text-red-200/90">
                 Delete all notifications permanently?
               </p>
@@ -240,15 +240,15 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           )}
 
           {loading ? (
-            <div className="py-8 flex justify-center">
+            <div className="py-8 flex justify-center shrink-0">
               <Loader2 className="w-5 h-5 animate-spin text-gold-400" />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="px-3 py-8 text-center text-sm text-slate-500">
+            <div className="px-3 py-8 text-center text-sm text-slate-500 shrink-0">
               No notifications yet
             </div>
           ) : (
-            <div className="max-h-[min(24rem,60dvh)] overflow-y-auto theme-scrollbar space-y-1">
+            <div className="min-h-0 flex-1 overflow-y-auto theme-scrollbar space-y-1 sm:max-h-[min(24rem,60dvh)]">
               {notifications.map((notification) => {
                 const Icon = getNotificationIcon(notification.type);
                 const unread = !notification.read_at;
@@ -296,7 +296,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
             </div>
           )}
 
-          <div className="border-t border-slate-700/50 mt-2 pt-2 px-1">
+          <div className="shrink-0 border-t border-slate-700/50 mt-2 pt-2 px-1">
             <Link
               href="/notifications"
               onClick={() => setOpen(false)}
