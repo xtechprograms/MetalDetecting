@@ -1,4 +1,8 @@
--- Forum bans & suspensions (run in Supabase SQL Editor after forum-schema.sql)
+-- Treasure Atlas | Migration 6 of 17: forum-bans.sql
+-- Prerequisites: forum-schema.sql (step 2)
+-- Purpose: Forum bans and suspensions
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS forum_banned BOOLEAN NOT NULL DEFAULT false,

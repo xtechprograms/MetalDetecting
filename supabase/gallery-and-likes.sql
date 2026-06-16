@@ -1,5 +1,8 @@
--- Profile gallery, gallery likes/comments, and forum likes
--- Run in Supabase SQL Editor after forum-schema.sql
+-- Treasure Atlas | Migration 3 of 17: gallery-and-likes.sql
+-- Prerequisites: forum-schema.sql (step 2)
+-- Purpose: Profile gallery, gallery likes/comments, forum thread/post likes
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 -- ============================================================
 -- GALLERY

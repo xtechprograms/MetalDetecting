@@ -1,5 +1,8 @@
--- Treasure Atlas Forum + Roles
--- Run in Supabase SQL Editor AFTER the main schema.sql
+-- Treasure Atlas | Migration 2 of 17: forum-schema.sql
+-- Prerequisites: schema.sql (step 1)
+-- Purpose: Forum tables, roles (user / mod / admin), categories
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 -- ============================================================
 -- ROLES: user | mod | admin

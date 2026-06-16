@@ -1,5 +1,8 @@
--- Friend activity notifications + per-friend mute controls
--- Run in Supabase SQL Editor after notifications.sql
+-- Treasure Atlas | Migration 10 of 17: friend-activity-notifications.sql
+-- Prerequisites: notifications.sql (step 9)
+-- Purpose: Friend activity alerts and per-friend notification mute
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.notifications
   ADD COLUMN IF NOT EXISTS find_id UUID REFERENCES public.finds(id) ON DELETE CASCADE;

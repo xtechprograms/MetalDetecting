@@ -36,6 +36,7 @@ import {
   Minus,
   Send,
   Smile,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -62,6 +63,8 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
   const [showKeysResetNotice, setShowKeysResetNotice] = useState(false);
   const [restorePassword, setRestorePassword] = useState("");
   const [restoringKeys, setRestoringKeys] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingHistory, setDeletingHistory] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -379,15 +382,87 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
     [supabase, loadMessages, refreshInbox]
   );
 
+  const deleteConversationHistory = useCallback(async () => {
+    if (!conversationId || !activeFriendId || deletingHistory) return;
+
+    setDeletingHistory(true);
+    setSendError(null);
+
+    try {
+      const conversationKey = await resolveConversationKey(conversationId, activeFriendId);
+      const imagePaths: string[] = [];
+
+      for (const message of messagesRef.current) {
+        if (message.is_encrypted && conversationKey && isEncryptedContent(message.content)) {
+          const payload = await decryptPayload(conversationKey, message.content);
+          if (payload?.imagePath) {
+            imagePaths.push(payload.imagePath);
+          }
+        } else if (message.image_url) {
+          imagePaths.push(message.image_url);
+        }
+      }
+
+      if (imagePaths.length > 0) {
+        await supabase.storage.from("message-images").remove(imagePaths);
+      }
+
+      const { error } = await supabase.rpc("clear_dm_conversation", {
+        p_conversation_id: conversationId,
+      });
+
+      if (error) {
+        setSendError("Could not delete chat history. Please try again.");
+        setDeletingHistory(false);
+        return;
+      }
+
+      revokeBlobUrls();
+      conversationKeysRef.current.delete(conversationId);
+      setMessages([]);
+      setConversationId(null);
+      setShowDeleteConfirm(false);
+      setShowEmoji(false);
+      await refreshInbox();
+    } catch {
+      setSendError("Could not delete chat history. Please try again.");
+    }
+
+    setDeletingHistory(false);
+  }, [
+    conversationId,
+    activeFriendId,
+    deletingHistory,
+    supabase,
+    resolveConversationKey,
+    revokeBlobUrls,
+    refreshInbox,
+  ]);
+
   const sendMessage = useCallback(
     async (content: string, imagePath?: string | null, imageIv?: string | null) => {
-      if (!conversationId || !activeFriendId || sending) return;
+      if (!activeFriendId || sending) return;
       if (!content.trim() && !imagePath) return;
 
       setSending(true);
       setSendError(null);
 
-      const conversationKey = await getConversationKey(conversationId, activeFriendId);
+      let convId = conversationId;
+      if (!convId) {
+        const { data: newConvId, error: convError } = await supabase.rpc(
+          "get_or_create_dm_conversation",
+          { p_other_user_id: activeFriendId }
+        );
+        if (convError || !newConvId) {
+          setSendError("Could not start conversation. Please try again.");
+          setSending(false);
+          return;
+        }
+        convId = newConvId;
+        setConversationId(newConvId);
+      }
+
+      const conversationKey = await getConversationKey(convId, activeFriendId);
       const trimmed = content.trim();
 
       let messageContent: string;
@@ -415,7 +490,7 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       const { data, error } = await supabase
         .from("direct_messages")
         .insert({
-          conversation_id: conversationId,
+          conversation_id: convId,
           sender_id: userId,
           content: messageContent,
           image_url: null,
@@ -461,12 +536,29 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
       getDecryptOptions,
     ]
   );
+
+  const handleImageUpload = useCallback(
     async (file: File) => {
-      if (!conversationId || !activeFriendId || uploadingImage) return;
+      if (!activeFriendId || uploadingImage) return;
 
       setUploadingImage(true);
       try {
-        const conversationKey = await getConversationKey(conversationId, activeFriendId);
+        let convId = conversationId;
+        if (!convId) {
+          const { data: newConvId, error: convError } = await supabase.rpc(
+            "get_or_create_dm_conversation",
+            { p_other_user_id: activeFriendId }
+          );
+          if (convError || !newConvId) {
+            setSendError("Could not start conversation. Please try again.");
+            setUploadingImage(false);
+            return;
+          }
+          convId = newConvId;
+          setConversationId(newConvId);
+        }
+
+        const conversationKey = await getConversationKey(convId, activeFriendId);
         if (!conversationKey) {
           setSendError("Photo sharing needs both friends to open Messages once.");
           setUploadingImage(false);
@@ -1038,7 +1130,48 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
                           " · End-to-end lock when they open Messages"}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={!conversationId || deletingHistory || messages.length === 0}
+                      className="p-2 rounded-lg hover:bg-red-950/40 text-slate-400 hover:text-red-400 disabled:opacity-40 disabled:pointer-events-none"
+                      aria-label="Delete chat history"
+                      title="Delete chat history"
+                    >
+                      {deletingHistory ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
+
+                  {showDeleteConfirm && (
+                    <div className="px-3 py-3 border-b border-red-900/40 bg-red-950/30">
+                      <p className="text-xs text-red-200/90">
+                        Permanently delete all messages with {activeFriend.display_name}? This
+                        removes the chat for both of you and cannot be undone.
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => void deleteConversationHistory()}
+                          disabled={deletingHistory}
+                          className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-500 disabled:opacity-50"
+                        >
+                          {deletingHistory ? "Deleting..." : "Delete history"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={deletingHistory}
+                          className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex-1 overflow-y-auto theme-scrollbar px-3 py-3 space-y-2">
                     {loadingChat ? (

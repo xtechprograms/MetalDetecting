@@ -1,5 +1,8 @@
--- Avatar storage bucket and policies
--- Run in Supabase SQL Editor if profile photo uploads fail
+-- Treasure Atlas | Migration 7 of 17: avatars-storage.sql
+-- Prerequisites: schema.sql (step 1)
+-- Purpose: Profile avatar storage bucket and policies
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)

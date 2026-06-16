@@ -37,17 +37,24 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 - **Forum replies and reactions** — Replies on your threads, replies in threads you posted in, and likes on threads/replies
 - **Friend activity** — Alerts when friends start forum threads, reply on the forum, or log finds
 - **Per-friend mute** — On a friend’s profile, turn off notifications from that user without unfriending
+- **Clear notification history** — Permanently delete all notifications from the inbox page or bell dropdown
 
 ### Direct messages
 
-- **Friends-only chat** — Floating messenger (bottom-right) when logged in; online, busy, and offline presence
+- **Friends-only chat** — Floating messenger (bottom-right) when logged in; resizes for phone, tablet, and desktop
+- **Presence indicators** — Green = online, orange = busy, red = offline (on avatars, chat header, and your status dropdown)
+- **Default online** — Users appear online when they open the app; status can be set to busy or offline
+- **Live friends list** — Refreshes when you open Messages, accept a friend, or when friendships change (Supabase Realtime)
 - **End-to-end encryption** — Messages and shared photos are encrypted in the browser before storage (ECDH P-256 + AES-GCM)
-- **Private keys stay local** — Each user’s private key lives in browser storage; only public keys are stored in Supabase
+- **Password-protected key backup** — Your message keys are backed up to your profile, encrypted with your login password, so history can be restored after clearing browser data (sign in again)
+- **Private keys stay local** — Keys load from backup at login; the server only stores ciphertext it cannot read without your password
 - **Encrypted attachments** — Photo uploads are encrypted client-side; the storage bucket is private (no public URLs)
-- **Realtime delivery** — New messages arrive instantly with optional notification sound and unread badge on the launcher
+- **Plaintext fallback** — Text still sends if a friend has not opened Messages yet; encryption activates once both have keys
+- **Realtime delivery** — New messages arrive instantly with notification sound and unread badge on the launcher
 - **Emoji & photos** — Quick emoji picker and image sharing in conversations
+- **Delete chat history** — Permanently clear all messages with a friend (removes the thread for both users)
 
-> **Encryption note:** Both friends must open Messages at least once so encryption keys are generated. Metadata (who chatted, when) is still visible to the server; message content is not. Clearing browser data can remove your private key and make older encrypted messages unreadable on that device.
+> **Encryption note:** Message keys are wrapped with your **login password** and backed up automatically when you sign in. If you clear browser data, sign in again with the same password to restore encrypted chats. Optional key file backup is also available in Messages. If you change your password, sign in once to refresh the backup. Metadata (who chatted, when) is still visible to the server.
 
 ### Forum
 
@@ -89,24 +96,63 @@ npm install
 ### 2. Set up Supabase
 
 1. Create a free project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor** and run these files **in order**:
+2. Open **SQL Editor → New query**
+3. Run each file below **in order**, **one file per query tab** (copy the entire file, paste, Run)
 
-| Order | File |
-| ----- | ---- |
-| 1 | `supabase/schema.sql` |
-| 2 | `supabase/forum-schema.sql` |
-| 3 | `supabase/gallery-and-likes.sql` |
-| 4 | `supabase/forum-images.sql` |
-| 5 | `supabase/forum-reports.sql` |
-| 6 | `supabase/forum-bans.sql` |
-| 7 | `supabase/avatars-storage.sql` |
-| 8 | `supabase/find-anonymity.sql` |
-| 9 | `supabase/notifications.sql` |
-| 10 | `supabase/friend-activity-notifications.sql` |
-| 11 | `supabase/messenger.sql` |
-| 12 | `supabase/messenger-encryption.sql` |
+#### How to run migrations (important)
 
-3. Go to **Settings → API** and copy your project URL and anon key
+- **Paste only SQL** — Use a fresh query tab each time. Never paste Supabase error text (e.g. lines starting with `Failed to run sql query:`); that causes syntax errors.
+- **One file at a time** — Wait for each run to finish before starting the next.
+- **Close live app tabs** while running migrations — Realtime subscriptions (notifications bell, messenger) can hold database locks. If you see `deadlock detected`, close the site, wait ~60 seconds, open a **new** query tab, and retry the **same** file.
+- **Safe to re-run** — Most files use `IF NOT EXISTS` / `CREATE OR REPLACE`. Duplicate-object messages are usually fine.
+- **Deploy app after SQL** — Features like delete chat history and clear notifications need both the SQL RPC **and** the latest app code.
+
+#### Migration order
+
+| # | File | Purpose |
+| - | ---- | ------- |
+| 1 | `supabase/schema.sql` | Profiles, finds, friendships, bookmarks, RLS, find photo storage |
+| 2 | `supabase/forum-schema.sql` | Forum tables, roles (user / mod / admin), categories |
+| 3 | `supabase/gallery-and-likes.sql` | Profile gallery, gallery likes/comments, forum likes |
+| 4 | `supabase/forum-images.sql` | Forum image attachment storage |
+| 5 | `supabase/forum-reports.sql` | Content reports and moderation queue |
+| 6 | `supabase/forum-bans.sql` | Forum bans and suspensions |
+| 7 | `supabase/avatars-storage.sql` | Profile avatar storage bucket |
+| 8 | `supabase/find-anonymity.sql` | Anonymous finds and map visibility toggles |
+| 9 | `supabase/notifications.sql` | Notifications table, triggers, Realtime |
+| 10 | `supabase/friend-activity-notifications.sql` | Friend activity alerts and per-friend mute |
+| 11 | `supabase/messenger.sql` | DM conversations, messages, presence, message images |
+| 12 | `supabase/messenger-encryption.sql` | E2EE public keys, encrypted messages, private image bucket |
+| 13 | `supabase/messenger-presence-default.sql` | Default presence to **online** for all users |
+| 14 | `supabase/messenger-friends-realtime.sql` | Realtime when friendships change (live friends list) |
+| 15 | `supabase/messenger-key-backup.sql` | Password-wrapped messaging key backup on profile |
+| 16 | `supabase/messenger-clear-history.sql` | RPC `clear_dm_conversation` — delete chat with a friend (both sides) |
+| 17 | `supabase/notifications-clear-history.sql` | RPC `clear_notification_history` — delete all your notifications |
+
+#### Optional / troubleshooting SQL
+
+| File | When to run |
+| ---- | ----------- |
+| `supabase/fix-signup-500.sql` | Signup returns HTTP 500 |
+| `supabase/set-admin.sql` | Promote your account to admin (edit username in file first) |
+
+#### Verify optional features (after steps 16–17)
+
+```sql
+-- Messenger: delete chat history
+SELECT proname FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND proname = 'clear_dm_conversation';
+
+-- Notifications: clear history
+SELECT proname FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND proname = 'clear_notification_history';
+```
+
+Each query should return **one row**. If clear notifications fails in the app but SQL succeeded, redeploy the latest app code (the UI calls these RPCs, not direct table deletes).
+
+4. Go to **Settings → API** and copy your project URL and anon key
 
 If signup fails with a 500 error, run `supabase/fix-signup-500.sql`. To promote your account to admin, follow the comment in `supabase/set-admin.sql`.
 
@@ -188,9 +234,12 @@ src/
 │   ├── notifications/      # Notification bell & list
 │   ├── profile/            # Gallery, edit profile
 │   └── research/           # Research panel, history modal, old maps
-├── lib/                    # Supabase clients, geo, research, messenger crypto
+├── lib/
+│   ├── messenger.ts        # Presence labels, sounds, friends-changed events
+│   ├── messengerCrypto.ts  # E2EE key exchange and message crypto
+│   └── …                   # Supabase clients, geo, research, permissions
 └── types/                  # TypeScript types
-supabase/                   # SQL migrations (run in order — see above)
+supabase/                   # SQL migrations (run 1–17 in order — see above)
 ```
 
 ## Responsible Detecting

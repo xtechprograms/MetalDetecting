@@ -10,7 +10,7 @@ import {
   getNotificationHref,
   getNotificationIcon,
 } from "@/lib/notifications";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Loader2, Trash2 } from "lucide-react";
 
 type NotificationBellProps = {
   userId: string;
@@ -23,6 +23,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -137,6 +139,20 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     setMarkingAll(false);
   }
 
+  async function clearNotificationHistory() {
+    setClearingHistory(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("clear_notification_history");
+
+    if (!error) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setShowClearConfirm(false);
+    }
+
+    setClearingHistory(false);
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -162,22 +178,66 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         >
           <div className="flex items-center justify-between px-2 py-2 border-b border-slate-700/50 mb-2">
             <p className="font-semibold text-sm">Notifications</p>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={markAllRead}
-                disabled={markingAll}
-                className="inline-flex items-center gap-1 text-xs text-gold-400 hover:text-gold-300 px-2 py-1 rounded-lg"
-              >
-                {markingAll ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <CheckCheck className="w-3 h-3" />
-                )}
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllRead}
+                  disabled={markingAll || clearingHistory}
+                  className="inline-flex items-center gap-1 text-xs text-gold-400 hover:text-gold-300 px-2 py-1 rounded-lg"
+                >
+                  {markingAll ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <CheckCheck className="w-3 h-3" />
+                  )}
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm((value) => !value)}
+                  disabled={clearingHistory}
+                  className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg"
+                  aria-label="Clear notification history"
+                  title="Clear history"
+                >
+                  {clearingHistory ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3 h-3" />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
+
+          {showClearConfirm && notifications.length > 0 && (
+            <div className="mx-2 mb-2 px-3 py-2 rounded-xl border border-red-900/40 bg-red-950/30">
+              <p className="text-xs text-red-200/90">
+                Delete all notifications permanently?
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => void clearNotificationHistory()}
+                  disabled={clearingHistory}
+                  className="px-2.5 py-1 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-500 disabled:opacity-50"
+                >
+                  {clearingHistory ? "Clearing..." : "Delete all"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(false)}
+                  disabled={clearingHistory}
+                  className="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
 
           {loading ? (
             <div className="py-8 flex justify-center">

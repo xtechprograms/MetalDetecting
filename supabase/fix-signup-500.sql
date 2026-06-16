@@ -1,5 +1,9 @@
+-- Treasure Atlas | Optional: fix-signup-500.sql
+-- Run only if signup returns HTTP 500 (not part of the main 1–17 migration order)
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
+
 -- OPTION 1: Fix the signup trigger (try this first)
--- Supabase → SQL Editor → paste all → Run
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

@@ -10,12 +10,15 @@ import {
   getNotificationHref,
   getNotificationIcon,
 } from "@/lib/notifications";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Loader2, Trash2 } from "lucide-react";
 
 export function NotificationsList({ userId }: { userId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+  const [clearingHistory, setClearingHistory] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const loadNotifications = useCallback(async () => {
@@ -79,6 +82,24 @@ export function NotificationsList({ userId }: { userId: string }) {
     setMarkingAll(false);
   }
 
+  async function clearNotificationHistory() {
+    setClearingHistory(true);
+    setClearError(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.rpc("clear_notification_history");
+
+    if (error) {
+      setClearError("Could not clear notification history. Please try again.");
+      setClearingHistory(false);
+      return;
+    }
+
+    setNotifications([]);
+    setShowClearConfirm(false);
+    setClearingHistory(false);
+  }
+
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   if (loading) {
@@ -105,12 +126,12 @@ export function NotificationsList({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
-      {unreadCount > 0 && (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {unreadCount > 0 && (
           <button
             type="button"
             onClick={markAllRead}
-            disabled={markingAll}
+            disabled={markingAll || clearingHistory}
             className="btn-secondary text-sm py-2"
           >
             {markingAll ? (
@@ -120,6 +141,51 @@ export function NotificationsList({ userId }: { userId: string }) {
             )}
             Mark all read
           </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setShowClearConfirm(true)}
+          disabled={clearingHistory}
+          className="btn-secondary text-sm py-2 text-red-300 hover:text-red-200 hover:border-red-900/50"
+        >
+          {clearingHistory ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Trash2 className="w-4 h-4" />
+          )}
+          Clear history
+        </button>
+      </div>
+
+      {showClearConfirm && (
+        <div className="glass-card px-4 py-3 border border-red-900/40 bg-red-950/30">
+          <p className="text-sm text-red-200/90">
+            Permanently delete all notifications? This cannot be undone.
+          </p>
+          {clearError && (
+            <p className="text-xs text-red-400 mt-2">{clearError}</p>
+          )}
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={() => void clearNotificationHistory()}
+              disabled={clearingHistory}
+              className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-500 disabled:opacity-50"
+            >
+              {clearingHistory ? "Clearing..." : "Delete all"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowClearConfirm(false);
+                setClearError(null);
+              }}
+              disabled={clearingHistory}
+              className="px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:text-slate-200"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

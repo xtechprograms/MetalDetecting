@@ -1,5 +1,8 @@
--- Forum content reports + moderation queue
--- Run in Supabase SQL Editor AFTER forum-schema.sql
+-- Treasure Atlas | Migration 5 of 17: forum-reports.sql
+-- Prerequisites: forum-schema.sql (step 2)
+-- Purpose: Content reports and moderation queue
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 CREATE TABLE IF NOT EXISTS public.forum_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

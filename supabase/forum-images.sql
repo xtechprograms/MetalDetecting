@@ -1,5 +1,8 @@
--- Forum post/thread images
--- Run in Supabase SQL Editor
+-- Treasure Atlas | Migration 4 of 17: forum-images.sql
+-- Prerequisites: forum-schema.sql (step 2)
+-- Purpose: Forum post/thread image storage
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.forum_threads
   ADD COLUMN IF NOT EXISTS image_urls TEXT[] NOT NULL DEFAULT '{}';
