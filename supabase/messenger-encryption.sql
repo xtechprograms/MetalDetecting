@@ -1,4 +1,8 @@
--- Messenger encryption (run after messenger.sql)
+-- Treasure Atlas | Migration 12 of 17: messenger-encryption.sql
+-- Prerequisites: messenger.sql (step 11)
+-- Purpose: E2EE public keys, encrypted message flag, private message-images bucket
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS encryption_public_key TEXT;

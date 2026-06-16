@@ -1,4 +1,9 @@
--- User notifications (run in Supabase SQL Editor after schema.sql + forum-schema.sql + gallery-and-likes.sql)
+-- Treasure Atlas | Migration 9 of 17: notifications.sql
+-- Prerequisites: schema.sql, forum-schema.sql, gallery-and-likes.sql (steps 1–3)
+-- Purpose: Notifications table, triggers, Realtime publication
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
+-- Tip: Close live site tabs if you see "deadlock detected" (Realtime holds locks).
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

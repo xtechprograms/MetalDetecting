@@ -462,6 +462,12 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
         setConversationId(newConvId);
       }
 
+      if (!convId) {
+        setSendError("Could not start conversation. Please try again.");
+        setSending(false);
+        return;
+      }
+
       const conversationKey = await getConversationKey(convId, activeFriendId);
       const trimmed = content.trim();
 
@@ -556,6 +562,12 @@ export function MessengerWidget({ userId }: MessengerWidgetProps) {
           }
           convId = newConvId;
           setConversationId(newConvId);
+        }
+
+        if (!convId) {
+          setSendError("Could not start conversation. Please try again.");
+          setUploadingImage(false);
+          return;
         }
 
         const conversationKey = await getConversationKey(convId, activeFriendId);

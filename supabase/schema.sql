@@ -1,5 +1,8 @@
--- Treasure Atlas Database Schema
--- Run this in your Supabase SQL Editor
+-- Treasure Atlas | Migration 1 of 17: schema.sql
+-- Prerequisites: none (run first on a new Supabase project)
+-- Purpose: Profiles, finds, friendships, bookmarks, RLS, find photo storage
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 -- Profiles
 CREATE TABLE IF NOT EXISTS profiles (

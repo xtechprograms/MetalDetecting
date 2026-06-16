@@ -1,4 +1,8 @@
--- Password-wrapped messaging key backup (run after messenger-encryption.sql)
+-- Treasure Atlas | Migration 15 of 17: messenger-key-backup.sql
+-- Prerequisites: messenger-encryption.sql (step 12)
+-- Purpose: Password-wrapped messaging key backup on profiles (restore after clearing browser data)
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS encrypted_messaging_key TEXT;

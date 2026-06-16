@@ -1,4 +1,8 @@
--- Direct messaging between friends (run after schema.sql + notifications.sql)
+-- Treasure Atlas | Migration 11 of 17: messenger.sql
+-- Prerequisites: schema.sql, notifications.sql (steps 1, 9)
+-- Purpose: DM conversations, messages, presence columns, message image storage
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS presence_status TEXT NOT NULL DEFAULT 'online'

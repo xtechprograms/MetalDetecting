@@ -1,4 +1,8 @@
--- Default presence to online (run after messenger.sql)
+-- Treasure Atlas | Migration 13 of 17: messenger-presence-default.sql
+-- Prerequisites: messenger.sql (step 11)
+-- Purpose: Default all users' presence to online
+--
+-- Run: SQL Editor → New query → paste ONLY this file → Run.
 
 ALTER TABLE public.profiles
   ALTER COLUMN presence_status SET DEFAULT 'online';
