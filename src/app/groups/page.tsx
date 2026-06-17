@@ -19,7 +19,7 @@ export default async function GroupsPage() {
   if (!user) redirect("/login?redirect=/groups");
 
   return (
-    <div className="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
+    <div className="w-full min-w-0 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12 overflow-x-hidden">
       <div className="mb-6 sm:mb-8">
         <h1 className="section-heading mb-2 flex items-center gap-2 sm:gap-3">
           <UsersRound className="w-7 h-7 sm:w-8 sm:h-8 text-gold-500 shrink-0" />
