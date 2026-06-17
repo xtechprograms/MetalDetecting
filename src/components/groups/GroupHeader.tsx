@@ -1,32 +1,54 @@
 import type { Group } from "./types";
-import { Lock, UsersRound } from "lucide-react";
+import { Globe, Lock, UsersRound } from "lucide-react";
 
 export function GroupHeader({ group }: { group: Group }) {
+  const isOpen = group.join_policy === "open";
+
   return (
-    <div className="mb-6 sm:mb-8 overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/40">
-      <div className="relative aspect-[3/1] sm:aspect-[21/7] bg-slate-800">
+    <header className="mb-6 overflow-hidden rounded-2xl border border-slate-700/50 bg-slate-900/40 shadow-lg shadow-black/20">
+      <div className="relative aspect-[5/2] sm:aspect-[3/1] min-h-[140px] bg-slate-800">
         {group.banner_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={group.banner_url} alt="" className="w-full h-full object-cover" />
+          <img src={group.banner_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-gold-900/20 via-slate-900 to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-br from-gold-900/30 via-slate-900 to-slate-950" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-slate-950/10" />
+
+        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/70 border border-slate-700/60 px-2.5 py-1 text-xs text-slate-300">
+              <UsersRound className="w-3.5 h-3.5 text-gold-400" />
+              {group.member_count} {group.member_count === 1 ? "member" : "members"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/70 border border-slate-700/60 px-2.5 py-1 text-xs text-slate-300">
+              {isOpen ? (
+                <>
+                  <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                  Open group
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-gold-400" />
+                  Private group
+                </>
+              )}
+            </span>
+            <span className="inline-flex items-center rounded-full bg-slate-950/70 border border-slate-700/60 px-2.5 py-1 text-xs text-slate-400">
+              Members only
+            </span>
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white drop-shadow-sm leading-tight">
+            {group.name}
+          </h1>
+        </div>
       </div>
-      <div className="p-4 sm:p-5 -mt-2 relative">
-        <h1 className="section-heading mb-2 flex items-center gap-2 sm:gap-3">
-          <UsersRound className="w-7 h-7 sm:w-8 sm:h-8 text-gold-500 shrink-0" />
-          <span className="min-w-0">{group.name}</span>
-        </h1>
-        {group.description && (
-          <p className="text-slate-400 text-sm sm:text-base leading-relaxed">{group.description}</p>
-        )}
-        <p className="text-xs text-slate-500 mt-2 flex items-center gap-2">
-          <Lock className="w-3.5 h-3.5" />
-          {group.member_count} members · Members only
-          {group.join_policy === "open" ? " · Open to join" : " · Invite only"}
-        </p>
-      </div>
-    </div>
+
+      {group.description && (
+        <div className="px-4 sm:px-6 py-4 border-t border-slate-800/70 bg-slate-900/30">
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">{group.description}</p>
+        </div>
+      )}
+    </header>
   );
 }

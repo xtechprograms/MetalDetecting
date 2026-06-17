@@ -18,6 +18,7 @@ type GroupMemberManagerProps = {
   userId: string;
   isOwner: boolean;
   isGroupAdmin: boolean;
+  embedded?: boolean;
 };
 
 export function GroupMemberManager({
@@ -25,6 +26,7 @@ export function GroupMemberManager({
   userId,
   isOwner,
   isGroupAdmin,
+  embedded = false,
 }: GroupMemberManagerProps) {
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,13 @@ export function GroupMemberManager({
 
   if (loading) {
     return (
-      <div className="glass-card p-6 mb-6 flex items-center justify-center text-slate-400">
+      <div
+        className={
+          embedded
+            ? "glass-card p-8 flex items-center justify-center text-slate-400"
+            : "glass-card p-8 flex items-center justify-center text-slate-400 mb-6"
+        }
+      >
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
         Loading members...
       </div>
@@ -135,13 +143,22 @@ export function GroupMemberManager({
   const self = members.find((member) => member.user_id === userId);
 
   return (
-    <div className="glass-card p-4 sm:p-5 mb-6">
-      <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
-        <Users className="w-5 h-5 text-gold-400" />
-        Members ({members.length})
-      </h2>
+    <div className={embedded ? "glass-card overflow-hidden" : "glass-card p-4 sm:p-5 mb-6"}>
+      <div
+        className={
+          embedded ? "px-4 sm:px-5 py-4 border-b border-slate-800/70" : "mb-4"
+        }
+      >
+        <h2 className="font-display text-lg font-semibold flex items-center gap-2">
+          <Users className="w-5 h-5 text-gold-400" />
+          Members ({members.length})
+        </h2>
+        {!embedded && (
+          <p className="text-sm text-slate-400 mt-1">People who can see and post in this group.</p>
+        )}
+      </div>
 
-      <div className="space-y-3">
+      <div className={embedded ? "p-4 sm:p-5 space-y-2" : "space-y-3"}>
         {members.map((member) => {
           const profile = member.profile || {
             username: "unknown",
@@ -161,7 +178,7 @@ export function GroupMemberManager({
           return (
             <div
               key={member.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-slate-800/30"
+              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-slate-800/25 border border-slate-800/60"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Link href={`/profile/${profile.username}`} className="shrink-0">
@@ -242,14 +259,14 @@ export function GroupMemberManager({
           type="button"
           onClick={() => void leaveGroup()}
           disabled={actingId === self.id}
-          className="mt-4 text-sm text-slate-400 hover:text-red-300 transition-colors"
+          className={`mt-4 text-sm text-slate-400 hover:text-red-300 transition-colors ${embedded ? "px-4 sm:px-5 pb-4" : ""}`}
         >
           Leave group
         </button>
       )}
 
       {isOwner && (
-        <p className="mt-4 text-xs text-slate-500">
+        <p className={`text-xs text-slate-500 ${embedded ? "px-4 sm:px-5 pb-4" : "mt-4"}`}>
           Removing someone only takes them out of this group. It does not ban them from Treasure
           Atlas.
         </p>

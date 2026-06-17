@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import type { Group } from "./types";
+import { GroupDeleteGroup } from "./GroupDeleteGroup";
+import { GroupJoinRequests } from "./GroupJoinRequests";
 import { GroupSettingsForm } from "./GroupSettingsForm";
 import { InviteMemberForm } from "./InviteMemberForm";
-import { ChevronDown, ChevronUp, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 type GroupAdminPanelProps = {
   group: Group;
@@ -21,30 +22,32 @@ export function GroupAdminPanel({
   isGroupAdmin,
   onGroupUpdated,
 }: GroupAdminPanelProps) {
-  const [open, setOpen] = useState(false);
-
   if (!isGroupAdmin) return null;
 
   return (
-    <div className="mb-6">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="w-full glass-card p-4 flex items-center justify-between gap-3 text-left min-h-[44px]"
-      >
-        <span className="font-semibold flex items-center gap-2">
+    <div className="glass-card overflow-hidden divide-y divide-slate-800/80">
+      <div className="px-4 sm:px-5 py-4 bg-slate-900/40">
+        <h2 className="font-display text-lg font-semibold flex items-center gap-2">
           <Shield className="w-5 h-5 text-gold-400" />
           {isOwner ? "Owner controls" : "Admin controls"}
-        </span>
-        {open ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-      </button>
+        </h2>
+        <p className="text-sm text-slate-400 mt-1">
+          Manage settings, invitations, and join requests for this group.
+        </p>
+      </div>
 
-      {open && (
-        <div className="mt-4 space-y-0">
-          <GroupSettingsForm group={group} isOwner={isOwner} onUpdated={onGroupUpdated} />
-          <InviteMemberForm groupId={group.id} userId={userId} />
-        </div>
-      )}
+      <GroupJoinRequests groupId={group.id} isGroupAdmin={isGroupAdmin} embedded />
+
+      <GroupSettingsForm
+        group={group}
+        isOwner={isOwner}
+        onUpdated={onGroupUpdated}
+        embedded
+      />
+
+      <InviteMemberForm groupId={group.id} userId={userId} embedded />
+
+      {isOwner && <GroupDeleteGroup group={group} />}
     </div>
   );
 }

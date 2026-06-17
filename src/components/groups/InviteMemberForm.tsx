@@ -7,9 +7,11 @@ import { Loader2, UserPlus } from "lucide-react";
 export function InviteMemberForm({
   groupId,
   userId,
+  embedded = false,
 }: {
   groupId: string;
   userId: string;
+  embedded?: boolean;
 }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,7 +90,10 @@ export function InviteMemberForm({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="glass-card p-4 sm:p-5 mb-6">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      className={embedded ? "p-4 sm:p-5" : "glass-card p-4 sm:p-5 mb-6"}
+    >
       <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
         <UserPlus className="w-4 h-4 text-gold-400" />
         Invite a member

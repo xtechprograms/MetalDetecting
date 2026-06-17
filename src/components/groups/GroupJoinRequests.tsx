@@ -10,9 +10,14 @@ import { Loader2, UserPlus } from "lucide-react";
 type GroupJoinRequestsProps = {
   groupId: string;
   isGroupAdmin: boolean;
+  embedded?: boolean;
 };
 
-export function GroupJoinRequests({ groupId, isGroupAdmin }: GroupJoinRequestsProps) {
+export function GroupJoinRequests({
+  groupId,
+  isGroupAdmin,
+  embedded = false,
+}: GroupJoinRequestsProps) {
   const [requests, setRequests] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -72,8 +77,15 @@ export function GroupJoinRequests({ groupId, isGroupAdmin }: GroupJoinRequestsPr
   if (!isGroupAdmin || loading || requests.length === 0) return null;
 
   return (
-    <div id="join-requests" className="glass-card p-4 sm:p-5 mb-6 scroll-mt-24">
-      <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
+    <div
+      id="join-requests"
+      className={
+        embedded
+          ? "p-4 sm:p-5 scroll-mt-24"
+          : "glass-card p-4 sm:p-5 mb-6 scroll-mt-24"
+      }
+    >
+      <h2 className="font-display text-base font-semibold flex items-center gap-2 mb-4">
         <UserPlus className="w-5 h-5 text-gold-400" />
         Join requests ({requests.length})
       </h2>

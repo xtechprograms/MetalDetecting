@@ -74,7 +74,7 @@ export function GroupFeed({
   }, [loadFeed]);
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full min-w-0 space-y-4">
       <GroupPostComposer
         groupId={groupId}
         userId={userId}

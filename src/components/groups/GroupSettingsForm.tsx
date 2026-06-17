@@ -10,9 +10,15 @@ type GroupSettingsFormProps = {
   group: Group;
   isOwner: boolean;
   onUpdated: (group: Group) => void;
+  embedded?: boolean;
 };
 
-export function GroupSettingsForm({ group, isOwner, onUpdated }: GroupSettingsFormProps) {
+export function GroupSettingsForm({
+  group,
+  isOwner,
+  onUpdated,
+  embedded = false,
+}: GroupSettingsFormProps) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || "");
   const [bannerUrl, setBannerUrl] = useState(group.banner_url);
@@ -113,15 +119,15 @@ export function GroupSettingsForm({ group, isOwner, onUpdated }: GroupSettingsFo
   }
 
   return (
-    <div className="glass-card p-4 sm:p-5 mb-6">
-      <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
+    <div className={embedded ? "p-4 sm:p-5" : "glass-card p-4 sm:p-5 mb-6"}>
+      <h2 className="font-display text-base font-semibold flex items-center gap-2 mb-4">
         <Settings className="w-5 h-5 text-gold-400" />
         Group settings
       </h2>
 
       <div className="mb-5">
         <p className="label-text">Banner photo</p>
-        <div className="relative rounded-xl overflow-hidden bg-slate-800 border border-slate-700/60 aspect-[3/1] sm:aspect-[21/6]">
+        <div className="relative rounded-xl overflow-hidden bg-slate-800 border border-slate-700/60 aspect-[21/8] sm:aspect-[21/6]">
           {bannerUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={bannerUrl} alt="" className="w-full h-full object-cover" />
