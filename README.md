@@ -25,6 +25,7 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 
 ### Community & social
 
+- **Community feed** — Facebook-style feed on the Community page: post text, photos, and videos; like and comment; grouped photo grids with lightbox navigation
 - **Detectorist search** — Find users and send friend requests
 - **Friends list** — View accepted friends on the Community page
 - **Profile gallery** — Photo gallery with likes and comments
@@ -35,6 +36,7 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 - **In-app notification bell** — Unread badge in the navbar with a quick dropdown
 - **Friend requests & acceptances**
 - **Forum replies and reactions** — Replies on your threads, replies in threads you posted in, and likes on threads/replies
+- **Community feed interactions** — Likes and comments on your posts; alerts when someone comments on a post you joined
 - **Friend activity** — Alerts when friends start forum threads, reply on the forum, or log finds
 - **Per-friend mute** — On a friend’s profile, turn off notifications from that user without unfriending
 - **Clear notification history** — Permanently delete all notifications from the inbox page or bell dropdown
@@ -131,6 +133,7 @@ npm install
 | 17 | `supabase/notifications-clear-history.sql` | RPC `clear_notification_history` — delete all your notifications |
 | 18 | `supabase/messenger-pin-backup.sql` | Messaging PIN length column (run if you already ran step 15 before PIN support) |
 | 19 | `supabase/messenger-replies.sql` | Reply-to-message support (`reply_to_id` column) |
+| 20 | `supabase/community-feed.sql` | Community feed posts, media, likes, comments, notifications |
 
 #### Optional / troubleshooting SQL
 
@@ -226,7 +229,7 @@ In Supabase **Authentication → URL Configuration**, add your Netlify URL:
 src/
 ├── app/
 │   ├── api/research/       # Area history, nearby sites, old maps
-│   ├── community/          # Friend search, requests, friends list
+│   ├── community/          # Friend search, requests, friends list, community feed
 │   ├── dashboard/          # User dashboard
 │   ├── finds/new/          # Log a find
 │   ├── forum/              # Forum, threads, moderation, admin
@@ -235,7 +238,7 @@ src/
 │   ├── profile/            # Profiles & edit
 │   └── research/           # Area research tool
 ├── components/
-│   ├── community/          # Friends, friend notification mute
+│   ├── community/          # Feed, friends, friend notification mute
 │   ├── finds/              # Log find form, delete find
 │   ├── forum/              # Threads, replies, likes, moderation
 │   ├── map/                # Leaflet map, legend, markers
@@ -248,7 +251,7 @@ src/
 │   ├── messengerCrypto.ts  # E2EE key exchange and message crypto
 │   └── …                   # Supabase clients, geo, research, permissions
 └── types/                  # TypeScript types
-supabase/                   # SQL migrations (run 1–19 in order — see above)
+supabase/                   # SQL migrations (run 1–20 in order — see above)
 ```
 
 ## Responsible Detecting

@@ -30,6 +30,11 @@ export function getNotificationHref(notification: Notification): string {
       return notification.thread_id
         ? `/forum/thread/${notification.thread_id}${notification.post_id ? `#post-${notification.post_id}` : ""}`
         : "/forum";
+    case "community_post_like":
+    case "community_post_comment":
+      return notification.community_post_id
+        ? `/community#post-${notification.community_post_id}`
+        : "/community";
     default:
       return "/notifications";
   }
@@ -51,7 +56,10 @@ export function getNotificationIcon(type: NotificationType): LucideIcon {
       return MessageSquare;
     case "forum_thread_like":
     case "forum_post_like":
+    case "community_post_like":
       return Heart;
+    case "community_post_comment":
+      return MessageSquare;
     default:
       return MessageSquare;
   }

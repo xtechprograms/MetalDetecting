@@ -130,7 +130,16 @@ export type NotificationType =
   | "forum_post_like"
   | "friend_forum_thread"
   | "friend_forum_post"
-  | "friend_find";
+  | "friend_find"
+  | "community_post_like"
+  | "community_post_comment";
+
+export type {
+  CommunityPost,
+  CommunityPostComment,
+  CommunityPostMedia,
+  CommunityPostMediaType,
+} from "@/components/community/types";
 
 export type FriendNotificationMute = {
   id: string;
@@ -148,6 +157,8 @@ export type Notification = {
   thread_id: string | null;
   post_id: string | null;
   find_id: string | null;
+  community_post_id: string | null;
+  community_comment_id: string | null;
   title: string;
   body: string | null;
   read_at: string | null;
