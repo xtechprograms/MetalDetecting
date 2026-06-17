@@ -72,9 +72,18 @@ export type ForumPost = {
   profiles?: Pick<Profile, "username" | "display_name" | "avatar_url" | "role" | "forum_post_count" | "find_count">;
 };
 
+export type GalleryAlbum = {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type GalleryPhoto = {
   id: string;
   user_id: string;
+  album_id: string | null;
   image_url: string;
   caption: string | null;
   like_count: number;
