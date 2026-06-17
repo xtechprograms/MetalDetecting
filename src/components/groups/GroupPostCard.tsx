@@ -5,7 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { deleteGroupPostMediaFiles } from "@/lib/groups/groupPosts";
 import type { GroupPostComment, GroupFeedPost } from "./types";
-import type { CommunityPostMedia } from "@/components/community/types";
+import type { CommunityPostMedia as CommunityPostMediaItem } from "@/components/community/types";
 import type { UserRole } from "@/types/database";
 import { formatNotificationTime } from "@/lib/notifications";
 import {
@@ -15,7 +15,7 @@ import {
 import { getInitials } from "@/lib/utils";
 import { CommunityPostAuthor } from "@/components/community/CommunityPostAuthor";
 import { CommunityPostMedia } from "@/components/community/CommunityPostMedia";
-import { Heart, Loader2, MessageCircle, Pencil, Send, Trash2, X } from "lucide-react";
+import { Heart, Loader2, MessageCircle, Pencil, Send, Trash2 } from "lucide-react";
 
 type GroupPostCardProps = {
   post: GroupFeedPost;
@@ -245,7 +245,7 @@ export function GroupPostCard({
       )}
 
       {post.media && post.media.length > 0 && (
-        <CommunityPostMedia media={post.media as CommunityPostMedia[]} />
+        <CommunityPostMedia media={post.media as CommunityPostMediaItem[]} />
       )}
 
       <div className="mt-4 flex items-center gap-4 sm:gap-6 border-t border-slate-800 pt-3">

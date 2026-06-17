@@ -39,7 +39,6 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
     const active = new Set<string>();
     const pending = new Set<string>();
     const invited = new Set<string>();
-    const pendingIds = new Map<string, string>();
 
     for (const row of memberships || []) {
       if (row.status === "active") active.add(row.group_id);
