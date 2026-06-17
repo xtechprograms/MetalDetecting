@@ -103,16 +103,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     setUnreadCount((count) => Math.max(count - 1, 0));
   }
 
-  function handleNotificationRemove(notificationId: string) {
-    setNotifications((prev) => {
-      const removed = prev.find((item) => item.id === notificationId);
-      if (removed && !removed.read_at) {
-        setUnreadCount((count) => Math.max(count - 1, 0));
-      }
-      return prev.filter((item) => item.id !== notificationId);
-    });
-  }
-
   async function markAllRead() {
     setMarkingAll(true);
     const supabase = createClient();
@@ -249,7 +239,6 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                   userId={userId}
                   compact
                   onRead={handleNotificationRead}
-                  onRemove={handleNotificationRemove}
                   onAction={() => setOpen(false)}
                 />
               ))}

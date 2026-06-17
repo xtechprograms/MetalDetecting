@@ -44,10 +44,6 @@ export function NotificationsList({ userId }: { userId: string }) {
     );
   }
 
-  function handleNotificationRemove(notificationId: string) {
-    setNotifications((prev) => prev.filter((item) => item.id !== notificationId));
-  }
-
   async function markAllRead() {
     setMarkingAll(true);
     const supabase = createClient();
@@ -180,7 +176,6 @@ export function NotificationsList({ userId }: { userId: string }) {
             notification={notification}
             userId={userId}
             onRead={handleNotificationRead}
-            onRemove={handleNotificationRemove}
           />
         ))}
       </div>
