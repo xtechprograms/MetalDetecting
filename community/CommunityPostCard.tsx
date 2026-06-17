@@ -3,16 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import type { CommunityPost, CommunityPostComment } from "@/types/database";
+import type { CommunityPostComment, FeedPost } from "./types";
 import { formatNotificationTime } from "@/lib/notifications";
 import { getInitials } from "@/lib/utils";
 import { CommunityPostAuthor } from "./CommunityPostAuthor";
 import { CommunityPostMedia } from "./CommunityPostMedia";
 import { Heart, Loader2, MessageCircle, Send } from "lucide-react";
-
-export type FeedPost = CommunityPost & {
-  likedByMe: boolean;
-};
 
 type CommunityPostCardProps = {
   post: FeedPost;

@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { uploadCommunityMedia } from "@/lib/community/uploadCommunityMedia";
-import type { CommunityPost, Profile } from "@/types/database";
+import type { CommunityPost } from "./types";
+import type { Profile } from "@/types/database";
 import { CommunityPostAuthor } from "./CommunityPostAuthor";
 import { ImagePlus, Loader2, Send, Video, X } from "lucide-react";
 

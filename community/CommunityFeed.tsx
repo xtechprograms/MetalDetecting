@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { CommunityPost, Profile } from "@/types/database";
+import type { CommunityPost, FeedPost } from "./types";
+import type { Profile } from "@/types/database";
 import { CommunityPostComposer } from "./CommunityPostComposer";
-import { CommunityPostCard, type FeedPost } from "./CommunityPostCard";
+import { CommunityPostCard } from "./CommunityPostCard";
 import { Loader2, Rss } from "lucide-react";
 
 type CommunityFeedProps = {

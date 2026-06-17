@@ -134,37 +134,12 @@ export type NotificationType =
   | "community_post_like"
   | "community_post_comment";
 
-export type CommunityPostMediaType = "image" | "video";
-
-export type CommunityPostMedia = {
-  id: string;
-  post_id: string;
-  media_url: string;
-  media_type: CommunityPostMediaType;
-  sort_order: number;
-  created_at: string;
-};
-
-export type CommunityPost = {
-  id: string;
-  user_id: string;
-  body: string | null;
-  like_count: number;
-  comment_count: number;
-  created_at: string;
-  updated_at: string;
-  author?: Pick<Profile, "username" | "display_name" | "avatar_url">;
-  media?: CommunityPostMedia[];
-};
-
-export type CommunityPostComment = {
-  id: string;
-  post_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  author?: Pick<Profile, "username" | "display_name" | "avatar_url">;
-};
+export type {
+  CommunityPost,
+  CommunityPostComment,
+  CommunityPostMedia,
+  CommunityPostMediaType,
+} from "@/components/community/types";
 
 export type FriendNotificationMute = {
   id: string;

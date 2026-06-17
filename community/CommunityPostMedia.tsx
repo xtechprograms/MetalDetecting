@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CommunityPostMedia as PostMedia } from "@/types/database";
+import type { CommunityPost, CommunityPostMedia as PostMedia } from "./types";
 import { MediaLightbox } from "./MediaLightbox";
 
 type CommunityPostMediaProps = {

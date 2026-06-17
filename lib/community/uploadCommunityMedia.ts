@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CommunityPostMediaType } from "@/types/database";
+import type { CommunityPostMediaType } from "@/components/community/types";
 
 const MAX_IMAGES = 10;
 const MAX_VIDEOS = 2;
