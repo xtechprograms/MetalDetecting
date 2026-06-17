@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { MediaLightbox } from "@/components/community/MediaLightbox";
 import type { GalleryAlbum, GalleryComment, GalleryPhoto } from "@/types/database";
 import { formatDate, getInitials } from "@/lib/utils";
 import {
@@ -51,6 +52,7 @@ export function ProfileGallery({
   const [carouselPage, setCarouselPage] = useState(0);
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
@@ -88,6 +90,7 @@ export function ProfileGallery({
   useEffect(() => {
     setCarouselPage(0);
     setShowComments(false);
+    setLightboxIndex(null);
   }, [activeAlbum]);
 
   const visiblePhotoKey = visiblePhotos.map((photo) => photo.id).join("|");
@@ -364,6 +367,14 @@ export function ProfileGallery({
     router.refresh();
   }
 
+  function openLightbox(photoId: string) {
+    const index = filteredPhotos.findIndex((photo) => photo.id === photoId);
+    if (index < 0) return;
+    setLightboxIndex(index);
+    setActivePhotoId(photoId);
+    setShowComments(false);
+  }
+
   function renderPhotoTile(photo: PhotoWithMeta) {
     const isSelected = selectedPhotoIds.has(photo.id);
     const isActive = activePhotoId === photo.id;
@@ -376,15 +387,15 @@ export function ProfileGallery({
             togglePhotoSelection(photo.id);
             return;
           }
-          setActivePhotoId(photo.id);
-          setShowComments(false);
+          openLightbox(photo.id);
         }}
+        aria-label={selectMode ? "Select photo" : "View photo larger"}
         className={`relative w-full rounded-xl overflow-hidden border transition-colors aspect-[4/3] ${
           selectMode && isSelected
             ? "border-gold-500 ring-2 ring-gold-500/40"
             : isActive
               ? "border-gold-500/50 ring-1 ring-gold-500/30"
-              : "border-slate-700/50 hover:border-slate-600"
+              : "border-slate-700/50 hover:border-slate-600 cursor-zoom-in"
         }`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -587,6 +598,7 @@ export function ProfileGallery({
                 setSelectMode((value) => !value);
                 setSelectedPhotoIds(new Set());
                 setShowComments(false);
+                setLightboxIndex(null);
               }}
               className={`btn-secondary text-sm min-h-[44px] w-full sm:w-auto justify-center ${
                 selectMode ? "border-gold-500/40 text-gold-300" : ""
@@ -786,6 +798,18 @@ export function ProfileGallery({
 
           {renderActivePhotoDetails()}
         </div>
+      )}
+
+      {lightboxIndex !== null && filteredPhotos.length > 0 && (
+        <MediaLightbox
+          images={filteredPhotos.map((photo) => photo.image_url)}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={(index) => {
+            setLightboxIndex(index);
+            setActivePhotoId(filteredPhotos[index]?.id ?? null);
+          }}
+        />
       )}
     </div>
   );
