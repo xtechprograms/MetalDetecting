@@ -30,6 +30,7 @@ type AlbumFilter = "all" | "uncategorized" | string;
 type Props = {
   isOwner: boolean;
   currentUserId: string | null;
+  albumsEnabled?: boolean;
   initialAlbums: GalleryAlbum[];
   initialPhotos: PhotoWithMeta[];
   initialComments: GalleryComment[];
@@ -38,6 +39,7 @@ type Props = {
 export function ProfileGallery({
   isOwner,
   currentUserId,
+  albumsEnabled = true,
   initialAlbums,
   initialPhotos,
   initialComments,
@@ -562,11 +564,13 @@ export function ProfileGallery({
     );
   }
 
-  const albumTabs: { id: AlbumFilter; label: string }[] = [
-    { id: "all", label: "All photos" },
-    { id: "uncategorized", label: "Uncategorized" },
-    ...albums.map((album) => ({ id: album.id, label: album.name })),
-  ];
+  const albumTabs: { id: AlbumFilter; label: string }[] = albumsEnabled
+    ? [
+        { id: "all", label: "All photos" },
+        { id: "uncategorized", label: "Uncategorized" },
+        ...albums.map((album) => ({ id: album.id, label: album.name })),
+      ]
+    : [{ id: "all", label: "All photos" }];
 
   return (
     <div className="glass-card p-5 sm:p-6 mb-6 sm:mb-8 w-full min-w-0 overflow-hidden">
@@ -576,7 +580,7 @@ export function ProfileGallery({
           Photo Gallery
         </h2>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {isOwner && photos.length > 0 && (
+          {isOwner && photos.length > 0 && albumsEnabled && (
             <button
               type="button"
               onClick={() => {
@@ -629,7 +633,7 @@ export function ProfileGallery({
         ))}
       </div>
 
-      {isOwner && selectMode && (
+      {isOwner && selectMode && albumsEnabled && (
         <div className="mb-4 p-4 rounded-xl bg-slate-800/30 border border-slate-700/50 space-y-3">
           <p className="text-sm text-slate-300">
             {selectedPhotoIds.size} photo{selectedPhotoIds.size === 1 ? "" : "s"} selected — tap
@@ -683,6 +687,14 @@ export function ProfileGallery({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {!albumsEnabled && isOwner && (
+        <div className="mb-4 p-3 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-200/90 text-sm">
+          Photo albums are not set up yet. Run{" "}
+          <code className="text-xs bg-slate-900/60 px-1.5 py-0.5 rounded">gallery-albums.sql</code>{" "}
+          (step 26) in the Supabase SQL Editor to enable albums.
         </div>
       )}
 
