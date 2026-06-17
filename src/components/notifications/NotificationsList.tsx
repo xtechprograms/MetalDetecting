@@ -97,7 +97,7 @@ export function NotificationsList({ userId }: { userId: string }) {
         <p className="text-slate-400">
           You&apos;re all caught up. Friend requests, forum posts, logged finds, replies, and reactions will show up here.
         </p>
-        <Link href="/community" className="btn-primary mt-6 inline-flex">
+        <Link href="/groups" className="btn-primary mt-6 inline-flex">
           Find detectorists
         </Link>
       </div>

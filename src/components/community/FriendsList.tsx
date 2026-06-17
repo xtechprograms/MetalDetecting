@@ -67,10 +67,10 @@ export function FriendsList({
         </h2>
         <p className="text-slate-400 text-sm mb-4">You have not added any friends yet.</p>
         <Link
-          href="/community"
+          href="/groups"
           className="inline-flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors"
         >
-          Find detectorists in Community
+          Find people and groups
         </Link>
       </div>
     );

@@ -14,7 +14,7 @@ import {
   UserPlus,
   Map,
   Search,
-  Users,
+  UsersRound,
   MessagesSquare,
   Rss,
   Shield,
@@ -34,7 +34,7 @@ const mobileNavLinks = [
   { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/map", label: "World Map", icon: Map },
   { href: "/research", label: "Research", icon: Search },
-  { href: "/community", label: "Community", icon: Users },
+  { href: "/groups", label: "Groups", icon: UsersRound },
 ];
 
 type Profile = {

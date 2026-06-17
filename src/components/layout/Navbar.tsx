@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Compass, Map, Search, Users, MessagesSquare, Rss } from "lucide-react";
+import { Compass, Map, Search, UsersRound, MessagesSquare, Rss } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { NavbarClient } from "./NavbarClient";
@@ -9,7 +9,7 @@ const navLinks = [
   { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/map", label: "World Map", icon: Map },
   { href: "/research", label: "Research", icon: Search },
-  { href: "/community", label: "Community", icon: Users },
+  { href: "/groups", label: "Groups", icon: UsersRound },
 ];
 
 export async function Navbar() {
