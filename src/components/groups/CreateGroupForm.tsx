@@ -72,7 +72,10 @@ export function CreateGroupForm({ userId }: { userId: string }) {
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="glass-card p-4 sm:p-5 mb-6 space-y-4">
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      className="glass-card p-4 sm:p-5 mb-6 space-y-4 w-full min-w-0 overflow-hidden"
+    >
       <h2 className="font-display text-lg font-semibold">Create a group</h2>
       <div>
         <label className="label-text" htmlFor="group-name">
@@ -114,14 +117,14 @@ export function CreateGroupForm({ userId }: { userId: string }) {
         </select>
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={loading} className="btn-primary min-h-[44px]">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+        <button type="submit" disabled={loading} className="btn-primary min-h-[44px] w-full sm:w-auto justify-center">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create group"}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="btn-secondary min-h-[44px]"
+          className="btn-secondary min-h-[44px] w-full sm:w-auto justify-center"
         >
           Cancel
         </button>

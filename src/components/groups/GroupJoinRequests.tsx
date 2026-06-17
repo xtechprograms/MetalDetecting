@@ -127,12 +127,12 @@ export function GroupJoinRequests({
                   <p className="text-xs text-slate-500 truncate">@{profile.username}</p>
                 </div>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-2 shrink-0 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => void respond(request, true)}
                   disabled={actingId === request.id}
-                  className="btn-primary text-sm min-h-[44px]"
+                  className="btn-primary text-sm min-h-[44px] w-full sm:w-auto justify-center"
                 >
                   {actingId === request.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -144,7 +144,7 @@ export function GroupJoinRequests({
                   type="button"
                   onClick={() => void respond(request, false)}
                   disabled={actingId === request.id}
-                  className="btn-secondary text-sm min-h-[44px]"
+                  className="btn-secondary text-sm min-h-[44px] w-full sm:w-auto justify-center"
                 >
                   Decline
                 </button>

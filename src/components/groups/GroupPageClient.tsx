@@ -56,7 +56,7 @@ export function GroupPageClient({
   const visibleTabs = tabs.filter((item) => !item.adminOnly || isGroupAdmin);
 
   return (
-    <div className="w-full min-w-0 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12">
+    <div className="w-full min-w-0 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12 overflow-x-hidden">
       <Link
         href="/groups"
         className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-gold-400 mb-5 transition-colors"
@@ -68,7 +68,7 @@ export function GroupPageClient({
       <GroupHeader group={group} />
 
       <nav
-        className="flex gap-1 p-1 mb-6 rounded-xl bg-slate-900/70 border border-slate-800/80 overflow-x-auto"
+        className="flex gap-1 p-1 mb-6 rounded-xl bg-slate-900/70 border border-slate-800/80 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]"
         aria-label="Group sections"
       >
         {visibleTabs.map(({ id, label, icon: Icon }) => (
@@ -76,7 +76,7 @@ export function GroupPageClient({
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={tabClass(tab === id)}
+            className={`${tabClass(tab === id)} shrink-0 snap-start touch-manipulation`}
           >
             <Icon className="w-4 h-4 shrink-0" />
             {label}

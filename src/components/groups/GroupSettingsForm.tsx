@@ -131,7 +131,7 @@ export function GroupSettingsForm({
   }
 
   return (
-    <div className={embedded ? "p-4 sm:p-5" : "glass-card p-4 sm:p-5 mb-6"}>
+    <div className={embedded ? "p-4 sm:p-5" : "glass-card p-4 sm:p-5 mb-6 w-full min-w-0 overflow-hidden"}>
       <h2 className="font-display text-base font-semibold flex items-center gap-2 mb-4">
         <Settings className="w-5 h-5 text-gold-400" />
         Group settings
@@ -258,7 +258,7 @@ export function GroupSettingsForm({
 
         {error && <p className="text-sm text-red-400">{error}</p>}
         {message && <p className="text-sm text-gold-400">{message}</p>}
-        <button type="submit" disabled={saving} className="btn-primary min-h-[44px]">
+        <button type="submit" disabled={saving} className="btn-primary min-h-[44px] w-full sm:w-auto justify-center">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save details"}
         </button>
       </form>

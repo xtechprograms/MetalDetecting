@@ -196,7 +196,10 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
 
     if (isMember) {
       return (
-        <Link href={`/groups/${group.id}`} className="btn-secondary text-sm shrink-0">
+        <Link
+          href={`/groups/${group.id}`}
+          className="btn-secondary text-sm w-full sm:w-auto min-h-[44px] justify-center"
+        >
           Open
         </Link>
       );
@@ -204,7 +207,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
 
     if (isInvited) {
       return (
-        <span className="text-xs text-slate-400 shrink-0 px-3 py-2 rounded-lg border border-slate-700/80">
+        <span className="text-xs text-slate-400 w-full sm:w-auto text-center sm:text-left px-3 py-2.5 min-h-[44px] inline-flex items-center justify-center rounded-lg border border-slate-700/80">
           Invited — see above
         </span>
       );
@@ -216,7 +219,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
           type="button"
           onClick={() => void cancelRequest(group.id)}
           disabled={busy}
-          className="btn-secondary text-sm shrink-0 min-h-[44px]"
+          className="btn-secondary text-sm w-full sm:w-auto min-h-[44px] justify-center"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Cancel request"}
         </button>
@@ -229,7 +232,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
           type="button"
           onClick={() => void joinGroup(group.id)}
           disabled={busy}
-          className="btn-primary text-sm shrink-0 min-h-[44px]"
+          className="btn-primary text-sm w-full sm:w-auto min-h-[44px] justify-center"
         >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join group"}
         </button>
@@ -241,7 +244,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
         type="button"
         onClick={() => void requestJoin(group.id)}
         disabled={busy}
-        className="btn-primary text-sm shrink-0 min-h-[44px]"
+        className="btn-primary text-sm w-full sm:w-auto min-h-[44px] justify-center"
       >
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Request to join"}
       </button>
@@ -249,7 +252,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
   }
 
   return (
-    <div className="glass-card p-4 sm:p-5 mb-6 sm:mb-8">
+    <div className="glass-card p-4 sm:p-5 mb-6 sm:mb-8 w-full min-w-0 overflow-hidden">
       <form onSubmit={(event) => void handleSearch(event)} className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
@@ -281,7 +284,7 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
             {people.map((profile) => (
               <div
                 key={profile.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/30 border border-slate-800/80"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-slate-800/30 border border-slate-800/80 min-w-0"
               >
                 <Link href={`/profile/${profile.username}`} className="shrink-0">
                   {profile.avatar_url ? (
@@ -318,9 +321,9 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
       )}
 
       {groups.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-6 min-w-0">
           <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-            <UsersRound className="w-4 h-4 text-gold-400" />
+            <UsersRound className="w-4 h-4 text-gold-400 shrink-0" />
             Groups
           </h3>
           <div className="space-y-3">
@@ -333,18 +336,20 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
               return (
                 <div
                   key={group.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-800/30 border border-slate-800/80"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-800/30 border border-slate-800/80 min-w-0"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold">{group.name}</p>
+                    <p className="font-semibold truncate">{group.name}</p>
                     {group.description && (
-                      <p className="text-sm text-slate-400 mt-1 line-clamp-2">{group.description}</p>
+                      <p className="text-sm text-slate-400 mt-1 line-clamp-2 break-words">
+                        {group.description}
+                      </p>
                     )}
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1 break-words">
                       {group.member_count} members · {policyLabel}
                     </p>
                   </div>
-                  {renderGroupAction(group)}
+                  <div className="w-full sm:w-auto shrink-0">{renderGroupAction(group)}</div>
                 </div>
               );
             })}

@@ -209,13 +209,13 @@ export function GroupMemberManager({
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 shrink-0">
+              <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto sm:justify-end">
                 {canPromoteGroupMember(isOwner, member.role) && (
                   <button
                     type="button"
                     onClick={() => void setMemberRole(member, "admin")}
                     disabled={actingId === member.id}
-                    className="btn-secondary text-xs min-h-[40px] px-3"
+                    className="btn-secondary text-xs min-h-[44px] px-3 flex-1 sm:flex-none justify-center"
                   >
                     <Shield className="w-3.5 h-3.5" />
                     Make admin
@@ -226,7 +226,7 @@ export function GroupMemberManager({
                     type="button"
                     onClick={() => void setMemberRole(member, "member")}
                     disabled={actingId === member.id}
-                    className="btn-secondary text-xs min-h-[40px] px-3"
+                    className="btn-secondary text-xs min-h-[44px] px-3 flex-1 sm:flex-none justify-center"
                   >
                     Remove admin
                   </button>
@@ -236,7 +236,7 @@ export function GroupMemberManager({
                     type="button"
                     onClick={() => void removeMember(member)}
                     disabled={actingId === member.id}
-                    className="inline-flex items-center gap-1.5 px-3 min-h-[40px] rounded-lg text-xs text-red-300 border border-red-900/40 hover:bg-red-950/30"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 min-h-[44px] rounded-lg text-xs text-red-300 border border-red-900/40 hover:bg-red-950/30 flex-1 sm:flex-none"
                   >
                     {actingId === member.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

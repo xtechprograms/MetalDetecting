@@ -25,7 +25,7 @@ export function GroupAdminPanel({
   if (!isGroupAdmin) return null;
 
   return (
-    <div className="glass-card overflow-hidden divide-y divide-slate-800/80">
+    <div className="glass-card overflow-hidden divide-y divide-slate-800/80 w-full min-w-0">
       <div className="px-4 sm:px-5 py-4 bg-slate-900/40">
         <h2 className="font-display text-lg font-semibold flex items-center gap-2">
           <Shield className="w-5 h-5 text-gold-400" />

@@ -38,7 +38,7 @@ export function GroupHeader({ group }: { group: Group }) {
               Members only
             </span>
           </div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white drop-shadow-sm leading-tight">
+          <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-sm leading-tight break-words [overflow-wrap:anywhere]">
             {group.name}
           </h1>
         </div>

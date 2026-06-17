@@ -79,19 +79,19 @@ export function GroupInvites({ userId }: { userId: string }) {
   if (loading || invites.length === 0) return null;
 
   return (
-    <div className="glass-card p-4 sm:p-5 mb-6">
+    <div className="glass-card p-4 sm:p-5 mb-6 w-full min-w-0 overflow-hidden">
       <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
-        <Mail className="w-5 h-5 text-gold-400" />
+        <Mail className="w-5 h-5 text-gold-400 shrink-0" />
         Group invitations ({invites.length})
       </h2>
       <div className="space-y-3">
         {invites.map((invite) => (
           <div
             key={invite.id}
-            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-800/30"
+            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-800/30 min-w-0"
           >
             <div className="flex-1 min-w-0">
-              <p className="font-semibold">{invite.group?.name || "Group invite"}</p>
+              <p className="font-semibold truncate">{invite.group?.name || "Group invite"}</p>
               {invite.group?.description && (
                 <p className="text-sm text-slate-400 mt-1 line-clamp-2">{invite.group.description}</p>
               )}
@@ -99,12 +99,12 @@ export function GroupInvites({ userId }: { userId: string }) {
                 Invited by {invite.inviter?.display_name || "a member"}
               </p>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => void respond(invite.id, true)}
                 disabled={actingId === invite.id}
-                className="btn-primary text-sm min-h-[44px]"
+                className="btn-primary text-sm min-h-[44px] flex-1 sm:flex-none justify-center"
               >
                 {actingId === invite.id ? <Loader2 className="w-4 h-4 animate-spin" /> : "Accept"}
               </button>
@@ -112,7 +112,7 @@ export function GroupInvites({ userId }: { userId: string }) {
                 type="button"
                 onClick={() => void respond(invite.id, false)}
                 disabled={actingId === invite.id}
-                className="btn-secondary text-sm min-h-[44px]"
+                className="btn-secondary text-sm min-h-[44px] flex-1 sm:flex-none justify-center"
               >
                 Decline
               </button>

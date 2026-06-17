@@ -64,7 +64,7 @@ export function MyGroupsList({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="glass-card p-4 sm:p-5 mb-6">
+    <div className="glass-card p-4 sm:p-5 mb-6 w-full min-w-0 overflow-hidden">
       <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
         <UsersRound className="w-5 h-5 text-gold-400" />
         Your groups ({groups.length})
