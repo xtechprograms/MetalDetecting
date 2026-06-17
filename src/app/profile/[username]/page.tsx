@@ -85,6 +85,12 @@ export default async function ProfilePage({ params }: Props) {
     friendshipStatus = friendship?.status || null;
   }
 
+  const { data: galleryAlbums } = await supabase
+    .from("profile_gallery_albums")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false });
+
   const { data: galleryPhotos } = await supabase
     .from("profile_gallery_photos")
     .select("*")
@@ -222,6 +228,7 @@ export default async function ProfilePage({ params }: Props) {
       <ProfileGallery
         isOwner={isOwnProfile}
         currentUserId={user?.id ?? null}
+        initialAlbums={galleryAlbums || []}
         initialPhotos={photosWithMeta}
         initialComments={galleryComments}
       />
