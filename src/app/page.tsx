@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { DetectoristToolkit } from "@/components/home/DetectoristToolkit";
+import { Footer } from "@/components/layout/Footer";
 
 const features = [
   {
@@ -224,6 +225,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <Footer />
     </>
   );
 }

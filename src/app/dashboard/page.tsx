@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { FIND_CATEGORIES, formatDate, formatCoordinates } from "@/lib/utils";
 import { DeleteFindButton } from "@/components/finds/DeleteFindButton";
+import { FriendRequests } from "@/components/community/FriendRequests";
+import { FriendsList } from "@/components/community/FriendsList";
 
 export const metadata = {
   title: "Dashboard",
@@ -133,6 +135,9 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-500">Connect with detectorists</p>
         </Link>
       </div>
+
+      <FriendRequests userId={user.id} />
+      <FriendsList userId={user.id} showEmpty />
 
       {/* Recent Finds */}
       <div className="glass-card p-6">

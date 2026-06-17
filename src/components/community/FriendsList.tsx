@@ -12,7 +12,13 @@ type FriendProfile = Pick<
   "id" | "username" | "display_name" | "avatar_url" | "location"
 >;
 
-export function FriendsList({ userId }: { userId: string }) {
+export function FriendsList({
+  userId,
+  showEmpty = false,
+}: {
+  userId: string;
+  showEmpty?: boolean;
+}) {
   const [friends, setFriends] = useState<FriendProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,7 +54,27 @@ export function FriendsList({ userId }: { userId: string }) {
     loadFriends();
   }, [userId]);
 
-  if (loading || friends.length === 0) return null;
+  if (loading) return null;
+
+  if (friends.length === 0) {
+    if (!showEmpty) return null;
+
+    return (
+      <div className="glass-card p-6 mb-8">
+        <h2 className="font-display text-lg font-semibold flex items-center gap-2 mb-4">
+          <Users className="w-5 h-5 text-gold-400" />
+          Your Friends
+        </h2>
+        <p className="text-slate-400 text-sm mb-4">You have not added any friends yet.</p>
+        <Link
+          href="/community"
+          className="inline-flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors"
+        >
+          Find detectorists in Community
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card p-6 mb-8">

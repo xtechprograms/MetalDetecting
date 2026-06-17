@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Cinzel, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { MessengerRoot } from "@/components/messenger/MessengerRoot";
 
 const display = Cinzel({
@@ -48,7 +47,6 @@ export default function RootLayout({
         <div className="fixed inset-0 bg-hero-gradient pointer-events-none" />
         <Navbar />
         <main className="relative flex-1 min-w-0 overflow-x-hidden">{children}</main>
-        <Footer />
         <MessengerRoot />
       </body>
     </html>

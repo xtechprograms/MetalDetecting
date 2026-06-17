@@ -12,7 +12,7 @@ import {
 export function getNotificationHref(notification: Notification): string {
   switch (notification.type) {
     case "friend_request":
-      return "/community#friend-requests";
+      return "/dashboard#friend-requests";
     case "friend_accepted":
     case "friend_find":
       return notification.actor?.username
