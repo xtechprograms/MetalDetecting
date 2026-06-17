@@ -327,8 +327,8 @@ export function DiscoverSearch({ currentUserId }: DiscoverSearchProps) {
             {groups.map((group) => {
               const policyLabel =
                 group.join_policy === "open"
-                  ? "Open to join"
-                  : "Request approval to join";
+                  ? "Public — join instantly"
+                  : "Private — request to join";
 
               return (
                 <div

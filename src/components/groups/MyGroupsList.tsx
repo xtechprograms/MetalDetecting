@@ -82,7 +82,7 @@ export function MyGroupsList({ userId }: { userId: string }) {
             )}
             <p className="text-xs text-slate-500 mt-2">
               {group.member_count} members · {group.membershipRole}
-              {group.join_policy === "open" ? " · Open" : " · Private"}
+              {group.join_policy === "open" ? " · Public" : " · Private"}
             </p>
           </Link>
         ))}

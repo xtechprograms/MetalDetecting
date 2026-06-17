@@ -25,7 +25,7 @@ export function GroupHeader({ group }: { group: Group }) {
               {isOpen ? (
                 <>
                   <Globe className="w-3.5 h-3.5 text-emerald-400" />
-                  Open group
+                  Public group
                 </>
               ) : (
                 <>

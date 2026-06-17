@@ -101,7 +101,7 @@ export function CreateGroupForm({ userId }: { userId: string }) {
       </div>
       <div>
         <label className="label-text" htmlFor="group-policy">
-          Who can join?
+          Group visibility
         </label>
         <select
           id="group-policy"
@@ -109,8 +109,8 @@ export function CreateGroupForm({ userId }: { userId: string }) {
           onChange={(event) => setJoinPolicy(event.target.value as "invite_only" | "open")}
           className="input-field"
         >
-          <option value="invite_only">Invite only — hidden unless you are a member</option>
-          <option value="open">Open — anyone can find and join from search</option>
+          <option value="invite_only">Private — request or invite to join</option>
+          <option value="open">Public — anyone can find and join from search</option>
         </select>
       </div>
       {error && <p className="text-sm text-red-400">{error}</p>}

@@ -3,8 +3,8 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { removeGroupBannerStorage, uploadGroupBanner } from "@/lib/groups/uploadGroupBanner";
-import type { Group } from "./types";
-import { ImagePlus, Loader2, Settings, Trash2 } from "lucide-react";
+import type { Group, GroupJoinPolicy } from "./types";
+import { Globe, ImagePlus, Loader2, Lock, Settings, Trash2 } from "lucide-react";
 
 type GroupSettingsFormProps = {
   group: Group;
@@ -21,6 +21,7 @@ export function GroupSettingsForm({
 }: GroupSettingsFormProps) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || "");
+  const [joinPolicy, setJoinPolicy] = useState<GroupJoinPolicy>(group.join_policy);
   const [bannerUrl, setBannerUrl] = useState(group.banner_url);
   const [saving, setSaving] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
@@ -38,13 +39,24 @@ export function GroupSettingsForm({
     setError(null);
     setMessage(null);
 
+    const payload: {
+      name: string;
+      description: string | null;
+      updated_at: string;
+      join_policy?: GroupJoinPolicy;
+    } = {
+      name: trimmedName,
+      description: description.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isOwner) {
+      payload.join_policy = joinPolicy;
+    }
+
     const { data, error: updateError } = await supabase
       .from("groups")
-      .update({
-        name: trimmedName,
-        description: description.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq("id", group.id)
       .select("*")
       .single();
@@ -199,6 +211,51 @@ export function GroupSettingsForm({
             rows={3}
           />
         </div>
+
+        {isOwner && (
+          <div>
+            <p className="label-text mb-2">Group visibility</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setJoinPolicy("invite_only")}
+                className={[
+                  "flex flex-col items-start gap-1.5 p-3 rounded-xl border text-left min-h-[44px] transition-colors",
+                  joinPolicy === "invite_only"
+                    ? "border-gold-500/40 bg-gold-500/10 text-gold-200"
+                    : "border-slate-700/60 bg-slate-800/30 text-slate-300 hover:border-slate-600",
+                ].join(" ")}
+              >
+                <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                  <Lock className="w-4 h-4" />
+                  Private
+                </span>
+                <span className="text-xs text-slate-400 leading-relaxed">
+                  Findable in search, but members must request to join or be invited.
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setJoinPolicy("open")}
+                className={[
+                  "flex flex-col items-start gap-1.5 p-3 rounded-xl border text-left min-h-[44px] transition-colors",
+                  joinPolicy === "open"
+                    ? "border-gold-500/40 bg-gold-500/10 text-gold-200"
+                    : "border-slate-700/60 bg-slate-800/30 text-slate-300 hover:border-slate-600",
+                ].join(" ")}
+              >
+                <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                  <Globe className="w-4 h-4" />
+                  Public
+                </span>
+                <span className="text-xs text-slate-400 leading-relaxed">
+                  Anyone can find this group in search and join instantly.
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-400">{error}</p>}
         {message && <p className="text-sm text-gold-400">{message}</p>}
         <button type="submit" disabled={saving} className="btn-primary min-h-[44px]">
