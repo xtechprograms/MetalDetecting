@@ -6,7 +6,7 @@ import { FriendNotificationToggle } from "@/components/community/FriendNotificat
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { RoleBadge } from "@/components/forum/RoleBadge";
 import { UserStatsBar } from "@/components/forum/UserStatsBar";
-import type { GalleryComment, UserRole } from "@/types/database";
+import type { GalleryAlbum, GalleryComment, UserRole } from "@/types/database";
 import {
   MapPin,
   Compass,
@@ -85,11 +85,18 @@ export default async function ProfilePage({ params }: Props) {
     friendshipStatus = friendship?.status || null;
   }
 
-  const { data: galleryAlbums } = await supabase
+  let galleryAlbumsList: GalleryAlbum[] = [];
+  const { data: galleryAlbums, error: galleryAlbumsError } = await supabase
     .from("profile_gallery_albums")
     .select("*")
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false });
+
+  if (!galleryAlbumsError && galleryAlbums) {
+    galleryAlbumsList = galleryAlbums;
+  }
+
+  const albumsEnabled = !galleryAlbumsError;
 
   const { data: galleryPhotos } = await supabase
     .from("profile_gallery_photos")
@@ -228,7 +235,8 @@ export default async function ProfilePage({ params }: Props) {
       <ProfileGallery
         isOwner={isOwnProfile}
         currentUserId={user?.id ?? null}
-        initialAlbums={galleryAlbums || []}
+        albumsEnabled={albumsEnabled}
+        initialAlbums={galleryAlbumsList}
         initialPhotos={photosWithMeta}
         initialComments={galleryComments}
       />
