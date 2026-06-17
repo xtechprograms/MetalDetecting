@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { GroupInvite } from "./types";
 import { Loader2, Mail } from "lucide-react";

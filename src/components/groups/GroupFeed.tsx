@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { GroupPost, GroupFeedPost } from "./types";
+import type { GroupFeedPost } from "./types";
 import type { Profile, UserRole } from "@/types/database";
 import { GroupPostComposer } from "./GroupPostComposer";
 import { GroupPostCard } from "./GroupPostCard";

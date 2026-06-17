@@ -8,6 +8,14 @@ import { Loader2, UsersRound } from "lucide-react";
 
 type MyGroup = Group & { membershipRole: string };
 
+function normalizeGroupRelation(group: unknown): Group | null {
+  if (!group) return null;
+  if (Array.isArray(group)) {
+    return (group[0] as Group | undefined) ?? null;
+  }
+  return group as Group;
+}
+
 export function MyGroupsList({ userId }: { userId: string }) {
   const [groups, setGroups] = useState<MyGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +35,7 @@ export function MyGroupsList({ userId }: { userId: string }) {
     const rows =
       memberships
         ?.map((row) => {
-          const group = row.group as Group | null;
+          const group = normalizeGroupRelation(row.group);
           if (!group) return null;
           return { ...group, membershipRole: row.role };
         })
