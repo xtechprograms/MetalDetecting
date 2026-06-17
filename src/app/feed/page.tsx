@@ -17,7 +17,7 @@ export default async function FeedPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username, display_name, avatar_url")
+    .select("username, display_name, avatar_url, role")
     .eq("id", user.id)
     .single();
 
@@ -35,7 +35,11 @@ export default async function FeedPage() {
         </p>
       </div>
 
-      <CommunityFeed userId={user.id} profile={profile} />
+      <CommunityFeed
+        userId={user.id}
+        userRole={profile.role || "user"}
+        profile={profile}
+      />
     </div>
   );
 }

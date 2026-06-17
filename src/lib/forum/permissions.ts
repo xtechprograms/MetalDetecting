@@ -88,6 +88,24 @@ export function canDeleteThread(
   return false;
 }
 
+export function canDeleteCommunityPost(
+  role: UserRole | undefined | null,
+  ownerId: string,
+  userId: string | undefined
+): boolean {
+  if (!userId) return false;
+  if (role === "admin") return true;
+  return ownerId === userId;
+}
+
+export function canEditCommunityPost(
+  ownerId: string,
+  userId: string | undefined
+): boolean {
+  if (!userId) return false;
+  return ownerId === userId;
+}
+
 export function canSoftDeletePost(role: UserRole | undefined | null): boolean {
   return canModerate(role);
 }

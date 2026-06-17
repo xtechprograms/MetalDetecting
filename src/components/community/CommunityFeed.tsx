@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CommunityPost, FeedPost } from "./types";
-import type { Profile } from "@/types/database";
+import type { Profile, UserRole } from "@/types/database";
 import { CommunityPostComposer } from "./CommunityPostComposer";
 import { CommunityPostCard } from "./CommunityPostCard";
 import { Loader2 } from "lucide-react";
 
 type CommunityFeedProps = {
   userId: string;
+  userRole?: UserRole;
   profile: Pick<Profile, "username" | "display_name" | "avatar_url">;
 };
 
@@ -23,7 +24,7 @@ function mapPosts(
   }));
 }
 
-export function CommunityFeed({ userId, profile }: CommunityFeedProps) {
+export function CommunityFeed({ userId, userRole = "user", profile }: CommunityFeedProps) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [highlightPostId, setHighlightPostId] = useState<string | null>(null);
@@ -94,6 +95,16 @@ export function CommunityFeed({ userId, profile }: CommunityFeedProps) {
     setPosts((prev) => [{ ...post, likedByMe: false }, ...prev]);
   }
 
+  function handleDeleted(postId: string) {
+    setPosts((prev) => prev.filter((post) => post.id !== postId));
+  }
+
+  function handleUpdated(updated: FeedPost) {
+    setPosts((prev) =>
+      prev.map((post) => (post.id === updated.id ? { ...post, ...updated } : post))
+    );
+  }
+
   return (
     <div className="w-full min-w-0">
       <CommunityPostComposer userId={userId} profile={profile} onPosted={handlePosted} />
@@ -114,7 +125,10 @@ export function CommunityFeed({ userId, profile }: CommunityFeedProps) {
               key={post.id}
               post={post}
               userId={userId}
+              userRole={userRole}
               highlight={highlightPostId === post.id}
+              onDeleted={handleDeleted}
+              onUpdated={handleUpdated}
             />
           ))}
         </div>

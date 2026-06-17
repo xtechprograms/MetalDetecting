@@ -134,6 +134,7 @@ npm install
 | 18 | `supabase/messenger-pin-backup.sql` | Messaging PIN length column (run if you already ran step 15 before PIN support) |
 | 19 | `supabase/messenger-replies.sql` | Reply-to-message support (`reply_to_id` column) |
 | 20 | `supabase/community-feed.sql` | Community feed posts, media, likes, comments, notifications |
+| 21 | `supabase/community-feed-moderation.sql` | Feed post edit/delete RLS (owners + admin delete) |
 
 #### Optional / troubleshooting SQL
 
@@ -252,7 +253,7 @@ src/
 │   ├── messengerCrypto.ts  # E2EE key exchange and message crypto
 │   └── …                   # Supabase clients, geo, research, permissions
 └── types/                  # TypeScript types
-supabase/                   # SQL migrations (run 1–20 in order — see above)
+supabase/                   # SQL migrations (run 1–21 in order — see above)
 ```
 
 ## Responsible Detecting
