@@ -106,6 +106,52 @@ export function canEditCommunityPost(
   return ownerId === userId;
 }
 
+export function canDeleteGroupPost(
+  role: UserRole | undefined | null,
+  ownerId: string,
+  userId: string | undefined,
+  isGroupAdmin: boolean
+): boolean {
+  if (!userId) return false;
+  if (role === "admin") return true;
+  if (isGroupAdmin) return true;
+  return ownerId === userId;
+}
+
+export function canEditGroupPost(ownerId: string, userId: string | undefined): boolean {
+  if (!userId) return false;
+  return ownerId === userId;
+}
+
+export function canManageGroupMembers(
+  isOwner: boolean,
+  isGroupAdmin: boolean
+): boolean {
+  return isOwner || isGroupAdmin;
+}
+
+export function canRemoveGroupMember(
+  isOwner: boolean,
+  isGroupAdmin: boolean,
+  targetRole: string,
+  targetUserId: string,
+  currentUserId: string
+): boolean {
+  if (targetRole === "owner") return false;
+  if (targetUserId === currentUserId && targetRole !== "owner") return true;
+  if (isOwner) return targetRole !== "owner";
+  if (isGroupAdmin) return targetRole === "member";
+  return false;
+}
+
+export function canPromoteGroupMember(isOwner: boolean, targetRole: string): boolean {
+  return isOwner && targetRole === "member";
+}
+
+export function canDemoteGroupAdmin(isOwner: boolean, targetRole: string): boolean {
+  return isOwner && targetRole === "admin";
+}
+
 export function canSoftDeletePost(role: UserRole | undefined | null): boolean {
   return canModerate(role);
 }

@@ -6,6 +6,7 @@ import {
   UserCheck,
   UserPlus,
   Users,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -17,7 +18,7 @@ export function getNotificationHref(notification: Notification): string {
     case "friend_find":
       return notification.actor?.username
         ? `/profile/${notification.actor.username}`
-        : "/community";
+        : "/groups";
     case "forum_thread_reply":
     case "forum_thread_like":
     case "friend_forum_thread":
@@ -35,6 +36,17 @@ export function getNotificationHref(notification: Notification): string {
       return notification.community_post_id
         ? `/feed#post-${notification.community_post_id}`
         : "/feed";
+    case "group_invite":
+      return "/groups";
+    case "group_join_request":
+      return notification.group_id
+        ? `/groups/${notification.group_id}#join-requests`
+        : "/groups";
+    case "group_post_like":
+    case "group_post_comment":
+      return notification.group_id
+        ? `/groups/${notification.group_id}`
+        : "/groups";
     default:
       return "/notifications";
   }
@@ -59,6 +71,14 @@ export function getNotificationIcon(type: NotificationType): LucideIcon {
     case "community_post_like":
       return Heart;
     case "community_post_comment":
+      return MessageSquare;
+    case "group_invite":
+      return UsersRound;
+    case "group_join_request":
+      return UserPlus;
+    case "group_post_like":
+      return Heart;
+    case "group_post_comment":
       return MessageSquare;
     default:
       return MessageSquare;
