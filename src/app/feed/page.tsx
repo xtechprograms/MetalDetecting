@@ -31,7 +31,7 @@ export default async function FeedPage() {
           <span className="min-w-0">Feed</span>
         </h1>
         <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-          Share updates, photos, and videos with the detectorist community.
+          Share updates, photos, and videos with the community.
         </p>
       </div>
 
