@@ -132,7 +132,11 @@ export type NotificationType =
   | "friend_forum_post"
   | "friend_find"
   | "community_post_like"
-  | "community_post_comment";
+  | "community_post_comment"
+  | "group_invite"
+  | "group_join_request"
+  | "group_post_like"
+  | "group_post_comment";
 
 export type {
   CommunityPost,
@@ -159,6 +163,9 @@ export type Notification = {
   find_id: string | null;
   community_post_id: string | null;
   community_comment_id: string | null;
+  group_id: string | null;
+  group_post_id: string | null;
+  group_comment_id: string | null;
   title: string;
   body: string | null;
   read_at: string | null;
