@@ -38,7 +38,9 @@ export function GroupDeleteGroup({ group }: GroupDeleteGroupProps) {
       await removeGroupBannerStorage(supabase, group.banner_url);
     }
 
-    const { error: deleteError } = await supabase.from("groups").delete().eq("id", group.id);
+    const { error: deleteError } = await supabase.rpc("delete_group", {
+      p_group_id: group.id,
+    });
 
     if (deleteError) {
       setError(deleteError.message || "Could not delete group.");
