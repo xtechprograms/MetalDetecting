@@ -6,7 +6,7 @@ import type { CommunityPost, FeedPost } from "./types";
 import type { Profile } from "@/types/database";
 import { CommunityPostComposer } from "./CommunityPostComposer";
 import { CommunityPostCard } from "./CommunityPostCard";
-import { Loader2, Rss } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 type CommunityFeedProps = {
   userId: string;
@@ -95,12 +95,7 @@ export function CommunityFeed({ userId, profile }: CommunityFeedProps) {
   }
 
   return (
-    <section id="feed" className="scroll-mt-24">
-      <div className="flex items-center gap-2 mb-4">
-        <Rss className="w-5 h-5 text-gold-500" />
-        <h2 className="font-display text-xl font-semibold">Community Feed</h2>
-      </div>
-
+    <div className="w-full min-w-0">
       <CommunityPostComposer userId={userId} profile={profile} onPosted={handlePosted} />
 
       {loading ? (
@@ -124,6 +119,6 @@ export function CommunityFeed({ userId, profile }: CommunityFeedProps) {
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }

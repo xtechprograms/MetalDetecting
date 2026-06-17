@@ -122,31 +122,31 @@ export function CommunityPostCard({ post, userId, highlight = false }: Community
   return (
     <article
       id={`post-${post.id}`}
-      className={`glass-card p-4 sm:p-5 scroll-mt-24 ${
+      className={`glass-card p-3 sm:p-5 scroll-mt-24 w-full min-w-0 overflow-hidden ${
         highlight ? "ring-2 ring-gold-500/50" : ""
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3 min-w-0">
         <CommunityPostAuthor profile={author} />
-        <time className="text-xs text-slate-500 shrink-0">
+        <time className="text-xs text-slate-500 shrink-0 pl-[3.25rem] sm:pl-0">
           {formatNotificationTime(post.created_at)}
         </time>
       </div>
 
       {post.body && (
-        <p className="mt-3 text-sm sm:text-base text-slate-200 whitespace-pre-wrap break-words">
+        <p className="mt-3 text-sm sm:text-base text-slate-200 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {post.body}
         </p>
       )}
 
       {post.media && post.media.length > 0 && <CommunityPostMedia media={post.media} />}
 
-      <div className="mt-4 flex items-center gap-6 border-t border-slate-800 pt-3">
+      <div className="mt-4 flex items-center gap-4 sm:gap-6 border-t border-slate-800 pt-3">
         <button
           type="button"
           onClick={() => void toggleLike()}
           disabled={post.user_id === userId || likeLoading}
-          className={`inline-flex items-center gap-1.5 text-sm transition-colors ${
+          className={`inline-flex items-center gap-1.5 min-h-[44px] px-1 text-sm transition-colors touch-manipulation ${
             likedByMe ? "text-gold-400" : "text-slate-400 hover:text-gold-400"
           } disabled:opacity-60`}
           aria-label={`Like post, ${likeCount} likes`}
@@ -158,7 +158,7 @@ export function CommunityPostCard({ post, userId, highlight = false }: Community
         <button
           type="button"
           onClick={() => void toggleComments()}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-gold-400 transition-colors"
+          className="inline-flex items-center gap-1.5 min-h-[44px] px-1 text-sm text-slate-400 hover:text-gold-400 transition-colors touch-manipulation"
           aria-label={`Comments, ${commentCount} comments`}
         >
           <MessageCircle className="w-4 h-4" />
@@ -199,7 +199,7 @@ export function CommunityPostCard({ post, userId, highlight = false }: Community
                     >
                       {commentAuthor.display_name}
                     </Link>
-                    <p className="text-sm text-slate-300 mt-0.5 whitespace-pre-wrap break-words">
+                    <p className="text-sm text-slate-300 mt-0.5 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {comment.content}
                     </p>
                   </div>
@@ -211,17 +211,20 @@ export function CommunityPostCard({ post, userId, highlight = false }: Community
             );
           })}
 
-          <form onSubmit={(event) => void submitComment(event)} className="flex items-center gap-2">
+          <form
+            onSubmit={(event) => void submitComment(event)}
+            className="flex items-stretch sm:items-center gap-2 min-w-0"
+          >
             <input
               value={commentDraft}
               onChange={(event) => setCommentDraft(event.target.value)}
               placeholder="Write a comment..."
-              className="flex-1 rounded-xl bg-slate-900/70 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40"
+              className="flex-1 min-w-0 w-full rounded-xl bg-slate-900/70 border border-slate-700 px-3 py-2.5 min-h-[44px] text-base sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40"
             />
             <button
               type="submit"
               disabled={commentLoading || !commentDraft.trim()}
-              className="p-2 rounded-lg bg-gold-500 text-slate-950 hover:bg-gold-400 disabled:opacity-60 transition-colors"
+              className="shrink-0 min-h-[44px] min-w-[44px] p-2 rounded-lg bg-gold-500 text-slate-950 hover:bg-gold-400 disabled:opacity-60 transition-colors touch-manipulation"
               aria-label="Post comment"
             >
               {commentLoading ? (

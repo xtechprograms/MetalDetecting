@@ -16,6 +16,7 @@ import {
   Search,
   Users,
   MessagesSquare,
+  Rss,
   Shield,
   ShieldAlert,
   Bell,
@@ -29,6 +30,7 @@ import type { UserRole } from "@/types/database";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const mobileNavLinks = [
+  { href: "/feed", label: "Feed", icon: Rss },
   { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/map", label: "World Map", icon: Map },
   { href: "/research", label: "Research", icon: Search },
@@ -223,7 +225,7 @@ export function NavbarClient({
           type="button"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
-          className="md:hidden btn-ghost min-h-11 min-w-11 p-2"
+          className="lg:hidden btn-ghost min-h-11 min-w-11 p-2"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -233,11 +235,11 @@ export function NavbarClient({
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 z-[60] bg-black/75 top-16"
+            className="lg:hidden fixed inset-0 z-[60] bg-black/75 top-16"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="md:hidden fixed left-0 right-0 top-16 z-[70] max-h-[calc(100dvh-4rem)] overflow-y-auto bg-slate-950 border-b border-slate-700 p-4 space-y-1 shadow-2xl">
+          <div className="lg:hidden fixed left-0 right-0 top-16 z-[70] max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain bg-slate-950 border-b border-slate-700 p-4 space-y-1 shadow-2xl">
             {mobileNavLinks.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}

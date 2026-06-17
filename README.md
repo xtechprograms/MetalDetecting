@@ -25,7 +25,7 @@ A professional, global metal detecting platform. Log GPS finds, research area hi
 
 ### Community & social
 
-- **Community feed** — Facebook-style feed on the Community page: post text, photos, and videos; like and comment; grouped photo grids with lightbox navigation
+- **Community feed** — Dedicated **Feed** page (`/feed`): post text, photos, and videos; like and comment; grouped photo grids with lightbox navigation
 - **Detectorist search** — Find users and send friend requests
 - **Friends list** — View accepted friends on the Community page
 - **Profile gallery** — Photo gallery with likes and comments
@@ -229,7 +229,8 @@ In Supabase **Authentication → URL Configuration**, add your Netlify URL:
 src/
 ├── app/
 │   ├── api/research/       # Area history, nearby sites, old maps
-│   ├── community/          # Friend search, requests, friends list, community feed
+│   ├── community/          # Friend search, requests, friends list
+│   ├── feed/               # Community feed (posts, likes, comments)
 │   ├── dashboard/          # User dashboard
 │   ├── finds/new/          # Log a find
 │   ├── forum/              # Forum, threads, moderation, admin

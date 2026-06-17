@@ -33,8 +33,8 @@ export function getNotificationHref(notification: Notification): string {
     case "community_post_like":
     case "community_post_comment":
       return notification.community_post_id
-        ? `/community#post-${notification.community_post_id}`
-        : "/community";
+        ? `/feed#post-${notification.community_post_id}`
+        : "/feed";
     default:
       return "/notifications";
   }

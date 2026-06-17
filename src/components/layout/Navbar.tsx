@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Compass, Map, Search, Users, MessagesSquare } from "lucide-react";
+import { Compass, Map, Search, Users, MessagesSquare, Rss } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { NavbarClient } from "./NavbarClient";
 
 const navLinks = [
+  { href: "/feed", label: "Feed", icon: Rss },
   { href: "/forum", label: "Forum", icon: MessagesSquare },
   { href: "/map", label: "World Map", icon: Map },
   { href: "/research", label: "Research", icon: Search },
@@ -44,7 +45,7 @@ export async function Navbar() {
         </div>
       )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-2 min-w-0">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
             <div className="relative shrink-0">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-gold-500 to-bronze-500 flex items-center justify-center shadow-lg shadow-gold-500/20 group-hover:shadow-gold-500/40 transition-shadow">
@@ -61,10 +62,14 @@ export async function Navbar() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0 shrink">
             {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} className="btn-ghost text-sm">
-                <Icon className="w-4 h-4" />
+              <Link
+                key={href}
+                href={href}
+                className="btn-ghost text-xs xl:text-sm px-2 xl:px-4 whitespace-nowrap shrink-0"
+              >
+                <Icon className="w-4 h-4 shrink-0" />
                 {label}
               </Link>
             ))}
